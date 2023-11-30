@@ -12,5 +12,7 @@ Developed by producers alike, BeatCloud removes the need for paying large amount
 - YouTube upload one-time-setup templates with integrated placeholders 
 - and more...
 
+Read all about BeatCloud or sign up at www.usebeatcloud.com!
+
 ## Help & Contact
 Any requests, help or general contact can be directed to fin@usebeatcloud.com
