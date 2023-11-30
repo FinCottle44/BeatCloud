@@ -52,8 +52,17 @@
           <div class="card border-0 shadow h-100">
             <div class="card-body">
               <h6 class="card-title">Videos this month:</h6>
-              <span id="user_monthly_video_count" style="font-size:42px;" class="px-2 {{'text-danger' if 0 > user_tier_config['monthly_vid_limit'] else 'text-primary'}}">0</span>
-              <span class="text-end">/ </span>{{user_tier_config['monthly_vid_limit'] if user.tier != 'unlimited' else '<i class="bi bi-infinity"></i>'|safe}}
+              <div class="row align-items-end">
+                <div class="col-auto">
+                  <span id="user_monthly_video_count" style="font-size:42px;" class="px-2 {{'text-danger' if 0 > user_tier_config['monthly_vid_limit'] else 'text-primary'}}">0</span>
+                  <span class="text-end">/ </span>{{user_tier_config['monthly_vid_limit'] if user.tier != 'unlimited' else '<i class="bi bi-infinity"></i>'|safe}}
+                </div>
+                {% if user.tier != 'unlimited' %}
+                <div class="col">
+                    <h6 class="text-muted text-end mb-2" style="font-size: 16px !important">Resets in {{limit_reset_countdown}} days</h6>
+                </div>
+                {% endif %}
+              </div>
             </div>
           </div>
         </div>

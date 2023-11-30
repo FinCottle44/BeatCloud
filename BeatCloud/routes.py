@@ -1,4 +1,6 @@
+from calendar import monthrange
 from datetime import datetime
+from math import floor
 from flask import render_template, url_for, request, redirect, flash, send_from_directory, Response, jsonify, session, json, abort
 from flask_login import current_user, login_required, login_user, logout_user
 from BeatCloud import app, ALLOWED_IMG_EXTENSIONS, ALLOWED_AUDIO_EXTENSIONS, ALLOWED_FONT_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS, GOOGLE_DISCOVERY_URL, beatcloud_db, User, s3
@@ -411,7 +413,23 @@ def account():
     asset_usage = beatcloud_db.get_user_asset_usage(current_user.id)
     preset_usage = beatcloud_db.get_user_preset_usage(current_user.id)
     tier_config = app.config['TIERS'][current_user.tier] # Defines limits etc.  
-    return render_template("account.html", user=current_user, title="Account", user_templates=user_templates, user_presets=user_presets, user_tier_config=tier_config, asset_usage=asset_usage, preset_usage=preset_usage)
+
+    # Compute time until monthly limits reset:
+    limit_reset_countdown = -1
+    if current_user.tier == "plus":
+        epoch = current_user.subscription_end_epoch
+        now = datetime.now().timestamp()
+        time_delta = epoch - now
+        limit_reset_countdown = floor(time_delta / (60 * 60 * 24)) 
+    elif current_user.tier == "free":
+        today = datetime.today()
+        current_month = today.month
+        current_year = today.year
+        num_days_in_month = monthrange(current_year, current_month)[1]
+        limit_reset_countdown = num_days_in_month - today.day
+        
+    # for unlimited there is no limit so no countdown
+    return render_template("account.html", user=current_user, title="Account", user_templates=user_templates, user_presets=user_presets, user_tier_config=tier_config, asset_usage=asset_usage, preset_usage=preset_usage, limit_reset_countdown=limit_reset_countdown)
 
 @app.route("/login/", methods=["POST", "GET"])
 def login():

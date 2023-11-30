@@ -138,6 +138,7 @@ class User(UserMixin):
         self.email = email
         self.picture = picture
         self.stripe_id = stripe_id
+        self.subscription_end_epoch = None # Needs to go before get_tier
         self.tier = self.get_tier(stripe_id)
         self.locked = self.check_tier_limits() # We lock accounts if they exceed tier limits & prompt users to delete some assets/templates (in layout.html)
 
@@ -161,7 +162,10 @@ class User(UserMixin):
                 if sub_status not in ['active', 'trialing']:
                     print("Inactive subscription")
                 else:
-                    prod_id = s.plan.product 
+                    self.subscription_end_epoch = s.current_period_end
+                    print(F"CURRENT USER SUBSCRIPOTION EP[OCH END TIME]::::: { s.current_period_end}")
+                    print(F"CURRENT USER SUBSCRIPOTION EP[OCH END TIME]:::: SELF {self.subscription_end_epoch}")
+                    prod_id = s.plan.product
                     prod = stripe.Product.retrieve(prod_id)
                     return prod.metadata.tier
     

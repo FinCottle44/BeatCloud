@@ -61,6 +61,18 @@ function fetch_all_presets(){
         type: 'GET',
         dataType: 'json', // Expect a JSON response
         success: function(presets) {
+            // Show message if no presets
+            if (presets.length == 0){
+                var no_presets = '<h6 id="NoPresetWarning" class="dropdown-header">No presets found. Create one!</h6>'
+                $('#create-preset-parent').append(no_presets);
+                $('#drop-delete-preset').addClass('disabled');
+                $('#drop-delete-preset').removeClass('text-danger');
+                $('#drop-update-preset').addClass('disabled');
+            } else {
+                $('#drop-delete-preset').removeClass('disabled');
+                $('#drop-delete-preset').addClass('text-danger');
+                $('#drop-update-preset').removeClass('disabled');
+            }
             // Populate dropdown
             $.each(presets, function(index, preset){
                 let id = preset.SK.split('#')[1]
@@ -72,6 +84,8 @@ function fetch_all_presets(){
                     text: name
                 });
                 
+                
+
                 // set onclick to use id
                 presetElement.click(function(){
                     load_preset(id, name);
