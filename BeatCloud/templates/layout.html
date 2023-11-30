@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+    <meta charset="utf-8">
+    <link rel="icon" href="{{ url_for('static', filename='icons/bc_logo.ico') }}">
+    <!-- Font -->
+    <!-- <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"> -->
+    <link href='https://fonts.googleapis.com/css?family=Poppins' rel='stylesheet'>
+
+    <!-- bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+ 
+    <!-- icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
+    <!-- jquery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anim.css') }}">
+	  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <!-- Custom JS -->
+    <script type="text/javascript" src="{{ url_for('static', filename='js/modal.js') }}"></script>
+
+    <title>BeatCloud - {{title}}</title>
+
+    <script>
+      let session_user_id = "{{user.id}}";
+      let session_user_tier = "{{user.tier}}";
+
+      // Styles for badges based on status:
+      const status_styles = {'Pending':'purple', 'Pre-Processing':'info', 'Queued':'indigo', 'Rendering':'warning', 'Ready':'secondary', 'Failed':'danger', 'Upload Failed':'danger','Uploading':'primary', 'Uploaded':'success'};
+    </script>
+
+    {% if user.locked == True and active_page not in ['assets', 'account'] %}
+    <script>
+      // Check for locked acount
+      $(window).on('load', function() {
+        console.log("User locked!")
+        $('#lockedAccountModal').modal({backdrop: 'static', keyboard: false}, 'show');
+        $('#lockedAccountModal').modal('show');
+      });
+    </script>
+    {% endif %}
+  </head>
+  <body class="bg-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-secondary py-0">
+      <div class="container-fluid">
+        <!-- <a class="navbar-brand" href="/"><img width=200px src="{{url_for('static', filename='img/LARGE-punchline-inline-crop.png') }}" alt=""></a> -->
+        {% if user.tier == "unlimited" %}
+          <a class="navbar-brand" href="/"><img height="40px" src="{{url_for('static', filename='img/bc_unlimited.png') }}" alt=""></a>
+        {% elif user.tier == "plus" %}
+          <a class="navbar-brand" href="/"><img height="40px" src="{{url_for('static', filename='img/bc_plus.png') }}" alt=""></a>
+        {% else %}
+          <a class="navbar-brand" href="/"><img height="40px" src="{{url_for('static', filename='img/logo-no-border.png') }}" alt=""></a>
+        {% endif %}
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarColor01">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="/">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {{'active' if active_page == 'create' else ''}}" href="/create">Create Visualizer
+                <span class="visually-hidden">(current)</span></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {{'active' if active_page == 'visualizers' else ''}}" href="/visualizers">My Visualizers</a>
+            </li>
+          </ul>
+          <ul class="navbar-nav">
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle {{'active' if active_page == 'account' else ''}}" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">{{user.name}}</a>
+              <div class="dropdown-menu dropdown-menu-right mb-3">
+                <a class="dropdown-item" href="/account">My account</a>
+                <a class="dropdown-item" href="/assets">My assets</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="/logout">Log out of <strong>{{user.name}}</strong></a>
+              </div>
+            </li>
+          </ul>
+          <img src="{{user.picture}}" class="d-none d-lg-block p-0 rounded-circle" referrerpolicy="no-referrer" style="max-height:2rem; float:right">
+        </div>
+      </div>
+    </nav>
+    <div id="alert-container"></div>
+    <div class="container mt-3" id="content">
+      {% block content %}
+
+      {% endblock %}
+    </div>
+    <div class="container">
+      <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
+        <div class="col-md-4 d-flex align-items-center">
+          <a href="/" class="mb-3 me-2 mb-md-0 text-muted text-decoration-none lh-1">
+            <svg class="bi" width="30" height="24"><use xlink:href="#bootstrap"></use></svg>
+          </a>
+          <span class="text-muted">© 2023 BeatCloud</span>
+        </div>
+
+        <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+          <li class="ms-3"><a class="text-muted" href="https://www.twitter.com/lankzbeats"><i class="bi bi-twitter"></i></use></svg></a></li>
+          <li class="ms-3"><a class="text-muted" href="https://www.instagram.com/lankzbeats"><i class="bi bi-instagram"></i></a></li>
+        </ul>
+      </footer>
+    </div>
+    <!-- Locked account modal -->
+    <div class="modal" id="lockedAccountModal" tabindex="-1" aria-labelledby="lockedAccountModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header text-center">
+            <h5 class="modal-title w-100" id="lockedAccountModalLabel"><i class="bi bi-exclamation-triangle-fill px-2"></i> Your account is temporarily locked.</h5>
+          </div>
+          <div class="modal-body text-center">
+            <p>Don't panic! </p>
+            <p>We're just letting you know that you are <strong>currently exceeding your plan's limits.</strong></p>
+            <p>Please proceed to <a href="/assets">My Assets</a> to delete unused assets, <a href="/account">My Account</a> to delete any unused presets, or <a href="#">Upgrade your plan</a></p>
+            <img style="width:15rem;" src="{{ url_for('static', filename='img/inline-dark-small.png') }}" alt="">
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

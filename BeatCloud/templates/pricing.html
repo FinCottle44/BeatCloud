@@ -1,0 +1,36 @@
+{% extends "layout.html"%}
+{% block content %}
+<script>
+  document.addEventListener('stripe:ready', function(){
+    console.log('Stripe pricing table loaded!');
+  });
+</script>
+<div class="my-3 mx-auto" style="width:80%; border-radius: 10px;">
+  <div class="container">
+    <h1 class="text-center mb-0">Pricing Guide</h1>
+    <p class="lead small text-center mb-3" style="">BeatCloud is free to use forever.</p>
+    <hr class="w-25 mx-auto">
+    <!-- cards -->
+    <div class="row justify-content-center rounded-4">
+      <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
+        <stripe-pricing-table 
+          pricing-table-id="prctbl_1OHVo9EKAQC0b3cDinq6unIW"
+          publishable-key="pk_test_51NzdW3EKAQC0b3cDpWX6n5RhNzjsmX1mj9Svte8OmgnJaFwtSXe04AHw28LemHMI54IXRolvzYJWmROxbdzUyQu500EMZ4AXC8"
+          customer-email="{{user.email}}"
+        >
+      </stripe-pricing-table>
+    </div>
+  </div>
+  <hr class="w-25 mx-auto">
+  <div class="row d-flex flex-wrap align-items-center">
+    <div class="col-6 mt-2">
+      <div style="display:inline-block;" class="">
+        <img width=200px src="{{url_for('static', filename='img/LARGE-punchline-inline-dark.png') }}" alt="" class="float-right">
+      </div>
+    </div>
+    <div class="col-6 mt-2">
+      <img width=250px class="mx-auto float-left" src="{{url_for('static', filename='img/developed-with-youtube-sentence-case-dark.png')}}" alt="">
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "landinglayout.html"%}
+{% block content %}
+<div class="alert alert-secondary mb-5 mx-auto" style="max-width: 30rem; width:80%; border-radius: 10px;">
+  <div class="row my-3">
+    <img src="{{ url_for('static', filename='img/BC logo rect.png') }}" class="w-25 mx-auto">
+  </div>
+
+  <div class="container form-container ">
+    <h1 class="text-center">An error occurred...</h1>
+    <p class="lead small text-center mb-5" style="">Please let @lankzbeats know how you got here.</p>
+    <hr class="w-25 mx-auto">
+    <p class="small text-center mt-5 mb-0" style="">Error code - {{e_context}}/{{e_description}}</p>
+    {% if e_context == 'login' %}
+    <!-- sign in with google -->
+    <div class="row mb-4">
+      <!-- <img class="col-xs-12 rounded w-75 mx-auto google-signin px-0" src="{{ url_for('static', filename='img/google-signin/btn_google_signin_light_normal_web@2x.png') }}" alt=""> -->
+      <div class="col-md-12">
+        <a class="btn btn-outline-light w-100 mt-3" href="/oauth" role="button" style="text-transform:none">
+          <img width="20px" style="margin-bottom:3px; margin-right:5px" alt="Google sign-in" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png" />
+          Login with Google
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  <div class="text-center w-100 p-0">
+    <img width=200px class="mx-auto" src="{{url_for('static', filename='img/developed-with-youtube-sentence-case-light.png')}}" alt="">
+  </div>
+</div>
+{% endblock %}

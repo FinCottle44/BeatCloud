@@ -1,0 +1,74 @@
+{% extends "landinglayout.html"%}
+{% block content %}
+<div class="my-3 mx-auto" style="width:80%; border-radius: 10px;">
+  <div class="row my-2">
+    <img src="{{pic}}" class="mx-auto p-0 rounded-circle" referrerpolicy="no-referrer" style="width: 5rem;">
+  </div>
+
+  <div class="container">
+    <h1 class="text-center mb-0">Hi {{name}}!</h1>
+    <div class="form-group mt-1 mb-4 mx-auto text-center">
+      Not you? <a href="/logout" style="width:100%">Logout</a>
+    </div>
+    <p class="lead small text-center mb-3" style="">What would you like to do today?</p>
+    <hr class="w-25 mx-auto">
+    <!-- cards -->
+    <div class="row justify-content-center">
+      <!-- create -->
+      <div class="col-md-4 p-3 navcard-parent">
+        <div class="card navcard h-100 text-center text-white bg-primary mb-3">
+          <h3 class="card-header">Create</h3>
+          <div class="card-body row row d-flex flex-wrap align-items-center">
+            <h5 class="card-title mb-4">Design & create a new video</h5>
+            <h1 class="text-center mb-0 pb-0 big-icon"><i class="bi bi-film"></i></h1>
+          </div>
+          <div class="card-footer">
+            <a id="btn_link_create" href="/create" class="btn btn-main btn-outline-light my-3 mx-auto" >Create a video</a>
+          </div>
+        </div>
+      </div>
+      <!-- view -->
+      <div class="col-md-4 p-3 navcard-parent">
+        <div class="card navcard h-100 text-center text-white bg-primary mb-3">
+          <h3 class="card-header">View</h3>
+          <div class="card-body row row d-flex flex-wrap align-items-center">
+            <h5 class="card-title mb-4">View & upload previously made visualizers</h5>
+            <h1 class="text-center"><i class="bi bi-columns-gap big-icon"></i></h1>
+            <!-- <img class="w-50 mx-auto" src="{{url_for('static', filename='icons/video.webp')}}" alt=""> -->
+          </div>
+          <div class="card-footer">
+            <a href="/visualizers" class="btn btn-outline-light my-3 btn-main mx-auto">My visualizers</a>
+          </div>
+        </div>
+      </div>
+      <!-- account -->
+      <div class="col-md-4 p-3 navcard-parent">
+        <div class="card navcard h-100 text-center text-white bg-primary mb-3">
+          <h3 class="card-header">Manage</h3>
+          <div class="card-body row row d-flex flex-wrap align-items-center">
+            <h5 class="card-title mb-4">View your account, add assets & more...</h5>
+            <h1 class="text-center"><i class="bi bi-person-circle big-icon"></i></h1>
+            <!-- <img class="w-50 mx-auto" src="{{url_for('static', filename='icons/video.webp')}}" alt=""> -->
+          </div>
+          <div class="card-footer">
+            <a href="/account" class="btn btn-outline-light my-3 btn-main mx-auto">My account</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <hr class="w-25 mx-auto">
+  <div class="row d-flex flex-wrap align-items-center">
+    <div class="col-6 mt-2">
+      <div class="row">
+        <img style="width:200px;" class="mx-auto float-left" src="{{url_for('static', filename='img/LARGE-punchline-inline-dark.png') }}" alt="">
+      </div>
+    </div>
+    <div class="col-6 mt-2">
+      <div class="row">
+        <img style="width:250px;" class="mx-auto float-left" src="{{url_for('static', filename='img/developed-with-youtube-sentence-case-dark.png')}}" alt="">
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

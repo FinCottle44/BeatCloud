@@ -1,0 +1,36 @@
+// Execute with: npx sass sass/custom.scss:static/css/custom.css
+
+// import bootstrap's variables and functions
+@import "../node_modules/bootstrap/scss/functions";
+@import "../node_modules/bootstrap/scss/variables";
+
+// Your color palette
+$primary:    #104FAF;
+$secondary:  #007BFF;
+$success:    #28a745;
+$info:       #c33caf;
+$warning:    #ffc107;
+$danger:     #dc3545;
+$light:      #B5D3FA;
+$dark:       #2A2F4F;
+$white:      #F3F3F3;
+$indigo:     #6610f2;
+$purple:     #ffaff0;
+
+// You can also adjust the theme colors if needed:
+$theme-colors: (
+  "primary": $primary,
+  "secondary": $secondary,
+  "success": $success,
+  "info": $info,
+  "warning": $warning,
+  "danger": $danger,
+  "light": $light,
+  "dark": $dark,
+  "white": $white,
+  "indigo": $indigo,
+  "purple": $purple
+);
+
+// Import Bootstrap to get the new colors
+@import "../node_modules/bootstrap/scss/bootstrap";

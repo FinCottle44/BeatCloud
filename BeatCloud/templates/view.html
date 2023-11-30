@@ -1,0 +1,330 @@
+{% extends "layout.html" %}
+{% set active_page = "visualizers" %}
+{% block content%}
+<div class="row">
+  <div class="col">
+    <h1>{{video.title}}</h1>
+  </div>
+  <div class="col align-self-center">
+    <!-- In order to be on this page status can only be uploaded, ready, or 'failed upload' -->
+    <!-- These badges are more descriptive than in /visualizers -->
+    {% if video.visualizer_status == "Uploaded" %}
+      <span id="status_badge" class="badge py-2 px-3 rounded-pill bg-success fw-light" style="float:right;">Uploaded to YouTube</span>
+    {% elif video.visualizer_status == "Ready" %}
+      <span id="status_badge" class="badge py-2 px-3 rounded-pill bg-secondary fw-light" style="float:right;">Ready to upload</span>
+    {% else %}
+      <span id="status_badge" class="badge py-2 px-3 rounded-pill bg-danger fw-light" style="float:right;">Failed to upload</span>
+    {% endif %}
+  </div>
+</div>
+<div class="row">
+  <p class="text-muted">Finalise Visualizer details & prepare for uploading.</p> <!-- if beatcloud premium else download video -->
+</div>
+<hr>
+<form id="yt_form" class="" action="" method="post">
+  {{form.videoid(value=video.id)}}
+  <div class="row align-items-center">
+    <div class="col-lg-6">
+      <video id="video_file" class="shadow mw-100 rounded-3" src=""controls></video>
+    </div>
+      <div class="col-lg-6">
+          <div class="row p-2 mb-1">
+            <div class="col align-self-center">
+              <h4 class="m-0">Upload to YouTube</h4>
+            </div>
+            <div class="col">
+              <ul class="nav" style="float:right;">
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle text-secondary" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false"> My Templates</a>
+                  <div class="dropdown-menu animate-in">
+                    <div id="create-template-parent">
+                      <!-- templates added here -->
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a id="drop-save-template" class="template-operation dropdown-item fw-semibold" href="#">Save template</a>
+                    <a id="drop-update-template" class="template-operation dropdown-item fw-semibold" href="#">Overwrite template</a>
+                    <a id="drop-delete-template" class="template-operation dropdown-item text-danger fw-semibold" href="#">Delete template</a>
+                  </div>
+                </li>
+              </ul>  
+            </div>
+          </div>
+          <div class="row px-2 mb-1">
+            <h6>Title</h6>
+          </div>
+          <div class="row px-4 mb-3">
+            {{form.title}}
+          </div>
+          <div class="row px-2 mb-1">
+            <h6>Description</h6>
+          </div>
+          <div class="row px-4 mb-3">
+            {{form.description}}
+          </div>
+          <div class="row p-2 mb-3">
+            <div class="accordion px-3 mt-1" id="metadata_accordian">
+              <div class="shadow accordion-item">
+                <h2 class="accordion-header" id="headingOne">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                    Tags & Template Metadata
+                  </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                  <div class="accordion-body">
+                    <div class="row form-group">
+                      <div class="col-md-6">
+                        <label class="col-form-label mt-3 py-1" for="inputDefault">BPM</label>
+                        <input type="text" class="form-control" placeholder="e.g. 140" id="inputDefault">
+                      </div>
+                      <div class="col-md-6">
+                        <label for="keySelect" class="col-form-label mt-3 py-1">Key</label>
+                        <select class="form-select" id="keySelect">
+                          <option>No key</option>
+                          <option>A Min</option>
+                          <option>A Maj</option>
+                          <option>A# Min</option>
+                          <option>A# Maj</option>
+                          <option>B Min</option>
+                          <option>B Maj</option>
+                          <option>C Min</option>
+                          <option>C Maj</option>
+                          <option>C# Min</option>
+                          <option>C# Maj</option>
+                          <option>D Min</option>
+                          <option>D Maj</option>
+                          <option>D# Min</option>
+                          <option>D# Maj</option>
+                          <option>E Min</option>
+                          <option>E Maj</option>
+                          <option>F Min</option>
+                          <option>F Maj</option>
+                          <option>F# Min</option>
+                          <option>F# Maj</option>
+                          <option>G Min</option>
+                          <option>G Maj</option>
+                          <option>G# Min</option>
+                          <option>G# Maj</option>
+                        </select>
+                      </div>
+                    </div>
+                    <hr class="w-50 mx-auto">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <label class="col-form-label py-1" for="inputDefault">Tags</label>
+                        <!-- Tooltip-->
+                        <svg data-toggle="tooltip" data-placement="right" title="BeatCloud Tags - These are separate from other platforms such as YouTube." xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-patch-question-fill" viewBox="0 0 16 16" style="float:right;">
+                          <path d="M5.933.87a2.89 2.89 0 0 1 4.134 0l.622.638.89-.011a2.89 2.89 0 0 1 2.924 2.924l-.01.89.636.622a2.89 2.89 0 0 1 0 4.134l-.637.622.011.89a2.89 2.89 0 0 1-2.924 2.924l-.89-.01-.622.636a2.89 2.89 0 0 1-4.134 0l-.622-.637-.89.011a2.89 2.89 0 0 1-2.924-2.924l.01-.89-.636-.622a2.89 2.89 0 0 1 0-4.134l.637-.622-.011-.89a2.89 2.89 0 0 1 2.924-2.924l.89.01.622-.636zM7.002 11a1 1 0 1 0 2 0 1 1 0 0 0-2 0zm1.602-2.027c.04-.534.198-.815.846-1.26.674-.475 1.05-1.09 1.05-1.986 0-1.325-.92-2.227-2.262-2.227-1.02 0-1.792.492-2.1 1.29A1.71 1.71 0 0 0 6 5.48c0 .393.203.64.545.64.272 0 .455-.147.564-.51.158-.592.525-.915 1.074-.915.61 0 1.03.446 1.03 1.084 0 .563-.208.885-.822 1.325-.619.433-.926.914-.926 1.64v.111c0 .428.208.745.585.745.336 0 .504-.24.554-.627z"/>
+                        </svg>
+                        <!-- end of tooltip -->
+                        <div class="input-group">
+                          {{form.keywords}}
+                          <input id="tag_input" type="text" class="form-control" placeholder="e.g. Drill" aria-label="Recipient's username" aria-describedby="button-addon2">
+                          <button class="btn btn-primary" type="button" id="btnAddTags" onclick="AddTag()">Add</button>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <!-- Tags to be placed here -->
+                        <div class="card bg-light h-100">
+                          <div id="tags_box" class="tag-box p-2">
+
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row px-4 mb-3">
+            <h4>Visibility</h4>
+            {{form.visibility}}
+          </div>
+      </div>
+  </div>
+
+  <div class="row py-3">
+    {% if video.visualizer_status != "Uploaded" %}
+      {{form.submit}}
+    {% else %}
+      <a href="https://www.youtube.com/watch?v={{video.yt_id}}" class="shadow btn btn-outline-danger mb-3 py-2 mt-1 btn-main mx-auto">View on YouTube</a>
+    {% endif %}
+  </div>
+</form>
+
+<!-- SAVE TEMPLATE MODAL -->
+<div class="modal" id="saveTemplateModal" tabindex="-1" aria-labelledby="saveTemplateModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="saveTemplateModalLabel">Save Upload Template</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="muted">Save the current upload content as a template:</p>
+        <h6>Template name</h6>
+        <input type="text" class="form-control" id="templateName" placeholder="Template 1">
+        <hr class="w-50 mx-auto">
+        <div class="row">
+          <div class="col-auto">
+            <h6>Highlight placeholder sections:</h6>
+          </div>
+          <div class="col-auto">
+            <svg data-toggle="tooltip" data-placement="right" title="Create placeholders by changing words to '[[placeholder_name]]'. For example, you could change 'Free RnB Type Beat - Love' to 'Free RnB Type Beat [[beatname]]'. You will then later be able to set the 'beatname' placeholder when loading the template." xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-patch-question-fill" viewBox="0 0 16 16" style="float:right;">
+              <path d="M5.933.87a2.89 2.89 0 0 1 4.134 0l.622.638.89-.011a2.89 2.89 0 0 1 2.924 2.924l-.01.89.636.622a2.89 2.89 0 0 1 0 4.134l-.637.622.011.89a2.89 2.89 0 0 1-2.924 2.924l-.89-.01-.622.636a2.89 2.89 0 0 1-4.134 0l-.622-.637-.89.011a2.89 2.89 0 0 1-2.924-2.924l.01-.89-.636-.622a2.89 2.89 0 0 1 0-4.134l.637-.622-.011-.89a2.89 2.89 0 0 1 2.924-2.924l.89.01.622-.636zM7.002 11a1 1 0 1 0 2 0 1 1 0 0 0-2 0zm1.602-2.027c.04-.534.198-.815.846-1.26.674-.475 1.05-1.09 1.05-1.986 0-1.325-.92-2.227-2.262-2.227-1.02 0-1.792.492-2.1 1.29A1.71 1.71 0 0 0 6 5.48c0 .393.203.64.545.64.272 0 .455-.147.564-.51.158-.592.525-.915 1.074-.915.61 0 1.03.446 1.03 1.084 0 .563-.208.885-.822 1.325-.619.433-.926.914-.926 1.64v.111c0 .428.208.745.585.745.336 0 .504-.24.554-.627z"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- On modal open, clone contents of the title & description controls, and tell users to surround parts they would like to template in [[item_name]] where item_name 
+        could be the title for example. Then, when loading templates, we programatically add text input controls for each user-defined placeholder, similarly to key-value pairs. -->
+        <div class="row">
+          <div class="col-auto">
+            <p class="m-1">Title</p>
+          </div>
+          <div class="col">
+            <p class="text-primary" style="float:right; cursor: pointer;" onclick="add_placeholder('title_template')">
+              <i class="bi bi-plus-circle"></i>
+              Insert placeholder
+            </p>
+          </div>
+        </div>
+        <input type="text" class="form-control mb-3" id="title_template" placeholder="E.g. Free RnB Type Beat 2023 - [[beatname]]"> <!-- Populate with title on page-->
+        <div class="row">
+          <div class="col-auto">
+            <p class="m-1">Description</p>
+          </div>
+          <div class="col">
+            <p class="text-primary" style="float:right; cursor: pointer; " onclick="add_placeholder('description_template')">
+              <i class="bi bi-plus-circle"></i>
+              Insert placeholder
+            </p>
+          </div>
+        </div>
+        <textarea style="height:15rem;" type="text" class="form-control" id="description_template" placeholder="E.g. Click here: [[beatlink]] to download [[beatname]]!"></textarea> <!-- Populate with description on page-->
+          
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="saveTemplateButton">Save template</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- UPDATE TEMPLATE MODAL -->
+<div class="modal" id="updateTemplateModal" tabindex="-1" aria-labelledby="updateTemplateModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="updateTemplateModalLabel">Update Template</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Select the template you wish to overwrite:</p>
+        <select class="form-select mb-3" id="templateList">
+          <!-- Options aqui -->
+        </select>
+
+
+        <hr class="w-50 mx-auto">
+        <div class="row">
+          <div class="col-auto">
+            <h6>Highlight placeholder sections:</h6>
+          </div>
+          <div class="col-auto">
+            <svg data-toggle="tooltip" data-placement="right" title="Create placeholders by changing words to '[[placeholder_name]]'. For example, you could change 'Free RnB Type Beat - Love' to 'Free RnB Type Beat [[beatname]]'. You will then later be able to set the 'beatname' placeholder when loading the template." xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-patch-question-fill" viewBox="0 0 16 16" style="float:right;">
+              <path d="M5.933.87a2.89 2.89 0 0 1 4.134 0l.622.638.89-.011a2.89 2.89 0 0 1 2.924 2.924l-.01.89.636.622a2.89 2.89 0 0 1 0 4.134l-.637.622.011.89a2.89 2.89 0 0 1-2.924 2.924l-.89-.01-.622.636a2.89 2.89 0 0 1-4.134 0l-.622-.637-.89.011a2.89 2.89 0 0 1-2.924-2.924l.01-.89-.636-.622a2.89 2.89 0 0 1 0-4.134l.637-.622-.011-.89a2.89 2.89 0 0 1 2.924-2.924l.89.01.622-.636zM7.002 11a1 1 0 1 0 2 0 1 1 0 0 0-2 0zm1.602-2.027c.04-.534.198-.815.846-1.26.674-.475 1.05-1.09 1.05-1.986 0-1.325-.92-2.227-2.262-2.227-1.02 0-1.792.492-2.1 1.29A1.71 1.71 0 0 0 6 5.48c0 .393.203.64.545.64.272 0 .455-.147.564-.51.158-.592.525-.915 1.074-.915.61 0 1.03.446 1.03 1.084 0 .563-.208.885-.822 1.325-.619.433-.926.914-.926 1.64v.111c0 .428.208.745.585.745.336 0 .504-.24.554-.627z"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- On modal open, clone contents of the title & description controls, and tell users to surround parts they would like to template in [[item_name]] where item_name 
+        could be the title for example. Then, when loading templates, we programatically add text input controls for each user-defined placeholder, similarly to key-value pairs. -->
+        <div class="row">
+          <div class="col-auto">
+            <p class="m-1">Title</p>
+          </div>
+          <div class="col">
+            <p class="text-primary" style="float:right; cursor: pointer;" onclick="add_placeholder('update_title_template')">
+              <i class="bi bi-plus-circle"></i>
+              Insert placeholder
+            </p>
+          </div>
+        </div>
+        <input type="text" class="form-control mb-3" id="update_title_template" placeholder="E.g. Free RnB Type Beat 2023 - [[beatname]]"> <!-- Populate with title on page-->
+        <div class="row">
+          <div class="col-auto">
+            <p class="m-1">Description</p>
+          </div>
+          <div class="col">
+            <p class="text-primary" style="float:right; cursor: pointer; " onclick="add_placeholder('update_description_template')">
+              <i class="bi bi-plus-circle"></i>
+              Insert placeholder
+            </p>
+          </div>
+        </div>
+        <textarea style="height:15rem;" type="text" class="form-control" id="update_description_template" placeholder="E.g. Click here: [[beatlink]] to download [[beatname]]!"></textarea> <!-- Populate with description on page-->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="updateTemplateButton">Update Template</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- LOAD TEMPLATE MODAL -->
+<div class="modal" id="loadTemplateModal" tabindex="-1" aria-labelledby="loadTemplateModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="loadTemplateModalLabel">Load Template</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h6>Placeholders found in template '<em id="loaded_template_name"></em>'!</h6>
+        <p>Please enter the values of placeholders:</p>
+        <div class="row">
+          <div class="col" id="placeholder_parent">
+            <!-- placeholders -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="loadTemplateButton">Load Template</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- DELETE TEMPLATE MODAL -->
+<div class="modal" id="deleteTemplateModal" tabindex="-1" aria-labelledby="deleteTemplateModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteTemplateModalLabel">Delete Template</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Please select the template you want to delete:</p>
+        <select class="form-select" id="templateDeleteList">
+            <!-- Options populated dynamically -->
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" id="deleteTemplateButton">Delete Template</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="{{url_for('static', filename='js/main.js')}}"></script>
+<script src="{{url_for('static', filename='js/yt_upload.js')}}"></script>
+<script src="{{url_for('static', filename='js/templates.js')}}"></script>
+<script>
+  var v_id = "{{video.id}}";
+  $(document).ready(function (){
+    $('#video_file').attr("src", add_dummy("{{v_path}}"));
+  });
+</script>
+{%endblock%}

@@ -1,0 +1,288 @@
+{% extends "layout.html"%}
+{% set active_page = "assets" %}
+{% block content %}
+<h1>My Assets</h1>
+<div class="row">
+  <div class="col align-self-center">
+    <p class="text-muted">Upload your own media here to integrate branded assets into your Visualizers</p>
+  </div>
+  {% if user.tier != "unlimited" %}
+  <div class="col-auto">
+    <p class="m-0">Custom asset allowance used: <span id="user_asset_count" style="font-size:32px" class="px-2 {{'text-danger' if asset_usage > user_tier_config['asset_limit'] else ''}}">{{asset_usage}}</span>/ {{user_tier_config['asset_limit']}}</p>
+    <p class="text-muted float-end"><a href="#">Upgrade</a> for more!</p>
+  </div>
+  {% endif %}  
+</div>
+<hr>
+<div class="row">
+  <div class="col">
+    <div class="row">
+      <div class="row">
+        <h5>Fonts</h5>
+        <div class="col-md-6 my-2">
+          {% if user_fonts|length == 0 %}
+          <div id="no-font-msg" class="row h-100">
+            <p class="my-auto text-muted text-center">No custom fonts found.</p>
+          </div>
+          {% endif %}
+          <ul class="list-group" id="font_list">
+            {% for fontname in user_fonts.values() %}
+            <li id="{{user_fonts[fontname]}}-row" class="shadow animate-in list-group-item d-flex justify-content-between align-items-center">
+              {{fontname}}
+              <span data-toggle="modal" data-target="#delete_font_modal" class="del-font badge bg-primary rounded-pill py-1 px-2 delete_font" onclick="trashcan('{{fontname}}', '{{user.id}}', 'font')">
+                <i class="bi bi-trash"></i>
+              </span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="col-md-6 my-2">
+          <div class="shadow card drop-area h-100 w-100 animate-in" id="font-drop-area">
+            <div class="card-header py-1">Upload fonts</div>
+            <div class="card-body text-center">
+              <i class="bi bi-box-arrow-in-down" style="font-size:2rem;"></i>
+              <p class="mb-0">Drag & drop</p>
+            </div>
+            <div class="card-footer">
+              <!-- If no javascript -->
+              <form class="my-form">
+                <input class="form-control" type="file" id="font_input" multiple accept=".ttf,.otf" onchange="handleFontFiles(this.files)">
+              </form>
+              <!-- <p id="font_upload_error" class="text-center text-danger pt-2"></p> -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr class="mx-auto my-2">
+      <div class="row my-2">
+        <h5>Layers</h5>
+        <div class="col-md-6 my-2">
+          <div id="user_layers_parent" class="row h-100"><!-- 'parent' -->
+            {% if user_layers|length == 0 %}
+            <div id="no-layer-msg" class="row">
+              <p class="my-auto text-muted text-center">No custom layers found.</p>
+            </div>
+            {% endif %}
+            {% for layername in user_layers.values() %}
+            <!-- foreach -->
+            <div id="{{layername}}-col" class="col-lg-4 d-flex justify-content-center "><!-- 'container' -->
+              <div class="shadow card video-card w-100 bg-light mb-3" style="max-width: 20rem; max-height: 15rem;"><!-- 'card' -->
+                <div class="card-header"><!-- 'header' -->
+                  <div class="row">
+                    <div class="col text-truncate card-title"><!-- 'title' -->
+                      {{layername}}
+                    </div>
+                    <!-- Trash can -->
+                    <div class="col-md-auto"><!-- 'trash-container' -->
+                      <i onclick="trashcan('{{ layername }}', '{{user.id}}', 'layer')" data-toggle="modal" data-target="#delete_video_modal" class="bi bi-trash delete_vid pull-right" style="float:right;cursor:pointer;font-size: 18px;"></i><!-- 'trash' -->
+                    </div>
+                  </div>
+                  <!-- 29/07/2022 21:22 -->
+                </div>
+                <div class="card-body d-flex align-items-center"><!-- 'thumb_container' -->
+                  <img src="/users/{{user.id}}/layers/{{layername}}" alt="" class="w-100 my-auto"><!-- 'thumb' -->
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+            <!-- endfor -->
+          </div>
+        </div>
+        <div class="col-md-6 my-2">
+          <div class="shadow card drop-area mb-3 h-100 w-100 animate-in" id="media-drop-area">
+            <div class="card-header py-1">Upload media</div>
+            <div class="card-body text-center">
+              <i class="bi bi-box-arrow-in-down" style="font-size:2rem;"></i>
+              <p class="mb-0">Drag & drop</p>
+            </div>
+            <div class="card-footer">
+              <!-- If no javascript -->
+              <form class="my-form">
+                <input class="form-control" type="file" id="media_input" multiple accept=".png,.jpg" onchange="handleMediaFiles(this.files)">
+              </form>
+              <!-- <p id="media_upload_error" class="text-center text-danger pt-2"></p> -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL font-->
+<div class="modal fade" id="delete_font_modal">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm delete font</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+        <p>Are you sure you want to delete font <strong id="deleting_font_name"></strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" onclick="" id="delete_font_btn">Delete</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL font-->
+<div class="modal fade" id="delete_layer_modal">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm delete layer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+        <p>Are you sure you want to delete layer <strong id="deleting_layer_name"></strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" onclick="" id="delete_layer_btn">Delete</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{url_for('static', filename='js/dragndrop_assets.js')}}"></script>
+<script src="{{url_for('static', filename='js/main.js')}}"></script>
+<script>
+
+  $(document).ready(function() {
+    $(".delete_font").on("click", function() {
+       $('#delete_font_modal').modal('show');
+    });
+  });
+
+  function trashcan(name, user_id, type){
+    if (type == 'font'){
+      document.getElementById('deleting_font_name').innerHTML = name;
+      document.getElementById('delete_font_btn').onclick = function() {delete_asset(name, user_id, type);};
+      $('#delete_font_modal').modal('show');
+    }
+    else if (type == 'layer'){
+        document.getElementById('deleting_layer_name').innerHTML = name;
+        document.getElementById('delete_layer_btn').onclick = function() {delete_asset(name, user_id, type);};
+        $('#delete_layer_modal').modal('show');
+    }
+  }
+
+  function delete_asset(name, user_id, type){
+    //send delete video request
+    var xhr = new XMLHttpRequest();
+    if (type == "font"){
+      item = document.getElementById(`${name}-row`);
+      url = `/users/${user_id}/fonts/${name}`;
+      modal = $('#delete_font_modal');
+    }
+    else {
+      item = document.getElementById(`${name}-col`);
+      url = `/users/${user_id}/layers/${name}`;
+      modal = $('#delete_layer_modal');
+    }
+    xhr.open('DELETE', url, true);
+
+    xhr.addEventListener('readystatechange', function(e) {
+      if (xhr.readyState == 4) { // The request is done
+        if (xhr.status == 200 || xhr.status == 204) {
+          // Success, remove the item with a transition
+          item.classList.add('animate-delete');
+          setTimeout(function() {
+            item.remove();
+          }, 500); 
+          
+          // Close modal
+          modal.modal('hide');
+
+          // Inform the user
+          showAlert('success', 'Successfully deleted asset ' + name + '.');
+          $('#user_asset_count').text(parseInt($('#user_asset_count').text())-1)
+        } else if (xhr.status == 404) {
+          // Item not found
+          showAlert('warning', 'Asset ' + name + ' not found.');
+        } else if (xhr.status == 403) {
+          // Unauthorized
+          showAlert('danger', 'Unauthorized to delete asset ' + name + '. Please log in.');
+        } else {
+          // Other error
+          showAlert('danger', 'Error deleting asset ' + name + '. Please try again later.');
+        }
+      }
+    });
+
+    xhr.send();
+  }
+
+  //having to put at bottom of script as users {{user.id}}
+  function addToFontList(font){
+    list = document.getElementById('font_list');
+    li = document.createElement('li');
+    li.id = font + "-row"
+    li.innerHTML = font;
+    span = document.createElement('span');
+    icon = document.createElement('i');
+    icon.classList.add('bi', 'bi-trash');
+    span.setAttribute("data-toggle",'modal')
+    span.setAttribute("data-target",'#delete_font_modal')
+    span.setAttribute("onclick",`trashcan('${font}', '{{user.id}}', 'font')`)
+    span.appendChild(icon);
+    span.classList.add('del-font', 'badge', 'bg-primary', 'rounded-pill', 'py-1', 'px-2');
+    li.appendChild(span)
+    li.classList.add('shadow', 'animate-in', 'list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+    list.appendChild(li);
+    $('#no-font-msg').remove();
+  }
+
+  //having to put at bottom of script as users {{user.id}}
+  function addToMediaList(layer){
+    parent = document.getElementById('user_layers_parent');
+    container = document.createElement('div');
+    container.id = layer + "-col"
+    container.classList.add('col-lg-4', 'd-flex', 'justify-content-center');
+    card = document.createElement('div')
+    card.classList.add("shadow", "card", "video-card", "w-100", "bg-light", "mb-3");
+    card.style.maxWidth = "20rem";
+    card.style.maxHeight = "15rem";
+
+    header = document.createElement('div');
+    header.classList.add("card-header");
+    row = document.createElement('div');
+    row.classList.add("row");
+    title = document.createElement('div');
+    title.classList.add("col", "card-title", "text-truncate");
+    title.innerHTML = layer;
+    trash_container = document.createElement('div');
+    trash_container.classList.add("col-md-auto");
+    trash = document.createElement('i');
+    trash.setAttribute("data-toggle",'modal');
+    trash.setAttribute("data-target",'#delete_video_modal');
+    trash.setAttribute("onclick",`trashcan('${layer}', '{{user.id}}', 'layer')`);
+    trash.classList.add('bi', 'bi-trash', 'pull-right', 'delete_vid');
+    trash.setAttribute("style", 'float:right;cursor:pointer;font-size: 18px;');
+
+    thumb_container = document.createElement('div');
+    thumb_container.classList.add("card-body", "d-flex", 'align-items-center');
+    thumb = document.createElement("img");
+    thumb.src = `/users/{{user.id}}/layers/${layer}`;
+    thumb.classList.add("w-100", "my-auto");
+
+    thumb_container.appendChild(thumb);
+    trash_container.appendChild(trash);
+    row.appendChild(title);
+    row.appendChild(trash_container);
+    header.appendChild(row);
+    card.appendChild(header);
+    card.appendChild(thumb_container);
+    container.appendChild(card);
+    parent.appendChild(container);
+    $('#no-layer-msg').remove();
+  }
+</script>
+{%endblock content %}

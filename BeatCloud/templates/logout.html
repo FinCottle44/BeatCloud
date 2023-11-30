@@ -1,0 +1,28 @@
+{% extends "landinglayout.html"%}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+      <div class="col">
+          <div class="card text-center shadow rounded-4 mx-auto" style="max-width: 30rem;">
+              <!-- Header Logo -->
+              <div class="mt-4">
+                  <img src="{{ url_for('static', filename='img/LARGE-punchline-center-dark-nopad.png') }}" class="mx-auto" style="max-width: 17rem;">
+              </div>
+              <!-- Body -->
+              <div class="card-body my-4">
+                  <p class="card-text px-3 mt-3 mb-5">See you soon!</p>
+                  <p class="card-text px-3 text-muted mt-4 my-2">Logged out by accident?</p>
+                  <a class="btn btn-outline-primary w-75" href="/oauth" role="button" style="text-transform:none">
+                      <img width="20px" style="margin-bottom:3px; margin-right:5px" alt="Google sign-in" src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/2048px-Google_%22G%22_logo.svg.png" />
+                      Continue with Google
+                  </a>
+              </div>
+              <!-- Footer -->
+              <div>
+                  <img width=200px class="mx-auto" src="{{url_for('static', filename='img/developed-with-youtube-sentence-case-dark.png')}}" alt="">
+              </div>
+          </div>
+      </div>
+  </div>
+</div>
+{% endblock %}

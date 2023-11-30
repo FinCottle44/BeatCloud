@@ -1,0 +1,282 @@
+{% extends "layout.html"%}
+{% set active_page = "account" %}
+{% block content %}
+<h1>My account</h1>
+<p class="text-muted">View profile information, plan usage & more.</p>
+<hr>
+<div class="row py-3">
+  <div class="col-lg-3">
+    <div class="row">
+      <img src="{{user.picture}}" class="mx-auto p-0 rounded-circle" referrerpolicy="no-referrer" style="width: 7rem; height:7rem;">
+    </div>
+    <div class="row text-center my-3">
+      <h2>{{user.name}}</h2>
+      <p class="lead small text-center">{{user.email}}</p>
+    </div>
+  </div>
+  <div class="col-lg-9 p-1">
+    <div class="row">
+      <div class="row">
+        <h3>Subscription</h3>
+      </div>
+      <div class="row">
+        <div class="col">
+          <h5>Usage</h5>
+        </div>
+        <div class="col-auto">
+          <p class="text-muted text-end">Current plan: <span class="text-body-emphasis" style="font-size:larger;">{{user_tier_config['pretty_name']}}</span></p>
+        </div>
+      </div>
+      <div class="row mb-3">
+        <!-- Usage card column-->
+        <div class="col p-4">
+          <div class="card border-0 shadow h-100">
+            <div class="card-body">
+              <h6 class="card-title">Custom Assets:</h6>
+              <span id="user_asset_count" style="font-size:42px;" class="px-2 {{'text-danger' if asset_usage > user_tier_config['asset_limit'] else 'text-primary'}}">{{asset_usage}}</span>
+              <span class="text-end">/ </span>{{user_tier_config['asset_limit'] if user.tier != 'unlimited' else '<i class="bi bi-infinity"></i>'|safe}}
+            </div>
+          </div>
+        </div>
+        <!-- end of single -->
+        <div class="col p-4">
+          <div class="card border-0 shadow h-100">
+            <div class="card-body">
+              <h6 class="card-title">Templates & Presets:</h6>
+              <span id="user_preset_count" style="font-size:42px;" class="px-2 {{'text-danger' if preset_usage > user_tier_config['preset_limit'] else 'text-primary'}}">{{preset_usage}}</span>
+              <span class="text-end">/ </span>{{user_tier_config['preset_limit'] if user.tier != 'unlimited' else '<i class="bi bi-infinity"></i>'|safe}}
+            </div>
+          </div>
+        </div>
+        <div class="col p-4">
+          <div class="card border-0 shadow h-100">
+            <div class="card-body">
+              <h6 class="card-title">Videos this month:</h6>
+              <span id="user_monthly_video_count" style="font-size:42px;" class="px-2 {{'text-danger' if 0 > user_tier_config['monthly_vid_limit'] else 'text-primary'}}">0</span>
+              <span class="text-end">/ </span>{{user_tier_config['monthly_vid_limit'] if user.tier != 'unlimited' else '<i class="bi bi-infinity"></i>'|safe}}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col text-center">
+          <a class="btn btn-primary" href="/changeplan">Manage my subscription <i class="bi bi-arrow-up-right"></i></a>
+          <!-- https://stripe.com/docs/customer-management/integrate-customer-portal -->
+
+        </div>
+      </div>
+    </div>
+    <hr class="mx-auto w-25">
+    <div class="row">
+      <h3>Presets & Templates</h3>
+      <div class="row mb-3">
+        <p class="text-muted">Defined when creating and uploading Visualizers.</p>
+        <!-- <p class="text-muted">Presets allow you to save a Visualizer's configuration for later rendering of other videos. Everything that can be tweaked on BeatCloud can be saved.</p> -->
+        <!-- <p class="text-muted">Templates allow you to define placeholders for certain words or values in your YouTube metadata when uploading.</p> -->
+        <!-- Presets -->
+        <div class="col">
+          <h6>Visualizer Presets</h6>
+          {% if user_presets|length == 0 %}
+          <div id="no-presets-msg" class="row h-100">
+            <p class="mt-2 text-muted">No presets found.</p>
+          </div>
+          {% endif %}
+          <ul class="list-group" id="preset_list">
+            {% for preset in user_presets %}
+            <li data-value="{{preset['SK'].split('#')[1]}}" id="{{preset['SK'].split('#')[1]}}-row" class="shadow animate-in list-group-item d-flex justify-content-between align-items-center">
+              {{preset['preset_name']}}
+              <span style="cursor: pointer;" data-toggle="modal" data-target="#delete_preset_modal" class="del-preset badge bg-primary rounded-pill py-1 px-2 delete_preset" onclick="trashcan('{{preset['SK'].split('#')[1]}}', '{{preset['preset_name']}}', 'preset')">
+                <i class="bi bi-trash"></i>
+              </span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        <!-- Templates -->
+        <div class="col">
+          <h6>Upload Templates</h6>
+          {% if user_templates|length == 0 %}
+          <div id="no-template-msg" class="row h-100">
+            <p class="mt-2 text-muted">No templates found.</p>
+          </div>
+          {% endif %}
+          <ul class="list-group" id="template_list">
+            {% for template in user_templates %}
+            <li data-value="{{template['SK'].split('#')[1]}}" id="{{template['SK'].split('#')[1]}}-row" class="shadow animate-in list-group-item d-flex justify-content-between align-items-center">
+              {{template['template_name']}}
+              <span style="cursor: pointer;" data-toggle="modal" data-target="#delete_template_modal" class="del-template badge bg-primary rounded-pill py-1 px-2 delete_template" onclick="trashcan('{{template['SK'].split('#')[1]}}', '{{template['template_name']}}', 'template')">
+                <i class="bi bi-trash"></i>
+              </span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+    <hr class="mx-auto w-25">
+    <div class="row">
+      <h3>Assets</h2>
+      <p class="text-muted">You can manage your fonts & Visualizer layers here: <a href="/assets">My assets</a></p>
+    </div>
+    <hr class="mx-auto w-25">
+    <div class="row">
+      <h4>Delete account</h4>
+      <p class="text-muted">Deleting your account will permanently remove all BeatCloud content created by this account, the account itself, and the permissions BeatCloud obtained upon your Google identity.</p>
+    </div>
+    <div class="row">
+      <button id="delete_acc" class="btn btn-main btn-outline-danger my-2 py-2 mx-auto">Delete account</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL ACCOUNT-->
+<div class="modal fade" id="delete_account_modal">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Sorry to see you go!</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+        <p>Are you sure you want to delete your account?</p>
+        <p><strong>Please feel free to contact help@usebeatcloud.com explaining why you are leaving.</strong></p>
+        <p>You will be missed!</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" onclick="delete_account()" id="delete_account_btn">Delete</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- MODAL PRESET -->
+<div class="modal fade" id="delete_preset_modal">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm deletion of Preset</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+        <p>Are you sure you want to delete preset <strong id="deleting_preset_name"></strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" onclick="" id="delete_preset_btn">Delete</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- MODAL TEMPLATE -->
+<div class="modal fade" id="delete_template_modal">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm deletion of Template</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+        <p>Are you sure you want to delete preset <strong id="deleting_template_name"></strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" onclick="" id="delete_template_btn">Delete</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="{{url_for('static', filename='js/main.js')}}"></script>
+<script>
+  $(document).ready(function() {
+    $("#delete_acc").on("click", function() {
+       $('#delete_account_modal').modal('show');
+    });
+  });
+
+  function delete_account(){
+    var xhr = new XMLHttpRequest();
+    url = `/users/{{user.id}}`;
+    xhr.open('DELETE', url);
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    
+    xhr.addEventListener('readystatechange', function(e) {
+      if (xhr.readyState == 4 && xhr.status == 200) {
+        showAlert('success', `Successfully deleted account.`)
+        
+        // Done. Inform the user
+        window.location.replace("/login");
+      }
+      else if (xhr.readyState == 4 && xhr.status != 200) {
+        showAlert('danger', `Error deleting account: ${xhr.status}`)
+      }
+    })
+
+    xhr.send();
+
+    // close modal
+    $('#delete_account_modal').modal('hide');
+  }
+
+  function trashcan(id, name, type){
+    if (type == 'preset'){
+      document.getElementById('deleting_preset_name').innerHTML = name
+      document.getElementById('delete_preset_btn').onclick = function() {delete_asset(name, id, type);};
+      $('#delete_preset_modal').modal('show');
+    }
+    else if (type == 'template'){
+        document.getElementById('deleting_template_name').innerHTML = name;
+        document.getElementById('delete_template_btn').onclick = function() {delete_asset(name, id, type);};
+        $('#delete_template_modal').modal('show');
+    }
+  }
+
+  function delete_asset(name, id, type){
+    var xhr = new XMLHttpRequest();
+    if (type == "preset"){
+      url = `/users/${session_user_id}/presets/${id}`;
+      modal = $('#delete_preset_modal');
+    }
+    else {
+      url = `/users/${session_user_id}/templates/${id}`;
+      modal = $('#delete_template_modal');
+    }
+    xhr.open('DELETE', url, true);
+
+    xhr.addEventListener('readystatechange', function(e) {
+      if (xhr.readyState == 4) { // The request is done
+        if (xhr.status == 200 || xhr.status == 204) {
+          // Success, remove the item with a transition
+          $(`#${id}-row`).addClass('animate-delete');
+          setTimeout(function() {
+            $(`#${id}-row`).remove();
+          }, 500); 
+          
+          // Close modal
+          modal.modal('hide');
+
+          // Inform the user
+          showAlert('success', 'Successfully deleted ' + type + ' ' + name + '.');
+          $('#user_preset_count').text(parseInt($('#user_preset_count').text())-1)
+        } else if (xhr.status == 404) {
+          // Item not found
+          showAlert('warning', 'Preset/Template ' + name + ' not found.');
+        } else if (xhr.status == 403) {
+          // Unauthorized
+          showAlert('danger', 'Unauthorized to delete ' + name + '. Please log in.');
+        } else {
+          // Other error
+          showAlert('danger', 'Error deleting preset/template' + name + '. Please try again later.');
+        }
+      }
+    });
+
+    xhr.send();
+  }
+
+</script>
+{%endblock content %}

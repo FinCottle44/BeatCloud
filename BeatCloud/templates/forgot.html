@@ -1,0 +1,22 @@
+{% extends "landinglayout.html" %}
+{% block content %}
+<div class="container form-container ">
+  <form class="form pt-4" action="forgot" method="post">
+    <h1 class="text-center mb-2">Reset password</h1>
+    <p class="lead small text-center" style="">Enter your email and check your inbox</p>
+    <div class="form-floating my-2">
+      <!-- <input type="email" class="form-control" id="login_email" placeholder="name@example.com"> -->
+      {{form.email}}
+      <label for="reg_email">Email address</label>
+    </div>
+    <div class="form-group my-2">
+      <!-- <button type="button" class="btn btn-outline-primary">Primary</button> -->
+      {{form.submit}}
+    </div>
+  </form>
+  <hr class="w-25 mx-auto">
+  <div class="form-group mt-1 mx-1">
+    <p class="text-center"><a href="/login">Back to login</a></p>
+  </div>
+</div>
+{% endblock %}

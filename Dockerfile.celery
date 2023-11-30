@@ -1,0 +1,40 @@
+# syntax=docker/dockerfile:1
+
+# Use the base Python image
+ARG PYTHON_VERSION=3.11.4
+FROM python:${PYTHON_VERSION}-slim as base
+
+#FFMPEG for rendering
+RUN apt-get update && apt-get install -y ffmpeg libcurl4-openssl-dev curl build-essential gcc libssl-dev
+
+# Create celery user:
+ARG UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/app" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    celeryuser
+
+# Set dir
+WORKDIR /app
+
+# Provide permissions:
+RUN chown -R celeryuser:celeryuser /app && mkdir /app/engine
+
+# Install dependencies
+# change to requirements_celery.txt
+RUN pip install celery[sqs] boto3 requests Pillow==10.0.0 opencv-python shotstack-sdk
+RUN pip install --upgrade google-api-python-client
+RUN pip install --upgrade google-auth-oauthlib google-auth-httplib2
+
+# Copy processing source code & tasks over
+COPY ./BeatCloud/engine /app/engine
+
+# Switch to the non-privileged user to run the application.
+USER celeryuser
+
+CMD [ "celery", "-A", "engine.tasks", "worker", "--loglevel=info", "-E" ]
+# CMD [ "celery", "-A", "engine.ImageTools", "worker", "--loglevel=info", "-E" ]

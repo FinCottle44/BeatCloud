@@ -1,0 +1,896 @@
+{% extends "layout.html" %}
+{% set active_page = "create" %}
+{% block content %}
+<!-- Caman import for image editing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/camanjs/4.1.2/caman.full.min.js"></script>
+
+<p id="support-notice" class="d-none">Your browser does not support Ajax uploads :-(<br/>The form will be submitted as normal.</p>
+<div class="container">
+  <form id="video_upload_form" class="my-form"></form> <!-- cannot nest so defined here -->
+  <form id="form" class="" enctype="multipart/form-data" action="" method="post">
+    {{form.csrf_token}}
+    {{form.v_id(value=v_id)}}
+    <div class="row mt-lg-3 mb-sm-5">
+      <div class="col-md-5 order-2 order-md-1">
+        <div class="row d-none d-md-flex">
+          <div class="col">
+            <h1>Create Visualizer</h1>
+          </div>
+        </div>
+        <!-- Inputs -->
+        <!-- <div class="row">
+          <h5>Details</h5>
+        </div> -->
+        <div class="row form-group">
+          <div class="col">
+            <label class="col-form-label mt-2 py-1" for="inputDefault">Track Name</label>
+            {{form.beatName}}
+            <!-- <input type="text" class="form-control" placeholder="e.g. Stars" id="inputDefault"> -->
+          </div>
+        </div>
+        <div class="row form-group">
+          <div class="col">
+            <label for="beatFile" class="form-label mt-4">Track File (.MP3 or .WAV)</label>
+            {{form.beatFile}}
+          </div>
+        </div>
+        <hr class="w-25 mx-auto">
+        <div class="row">
+          <div class="col">
+            <h5>Visual options</h5>
+          </div>
+          <div class="col">
+            <ul class="nav" style="float:right;">
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle text-secondary" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false"> My Presets</a>
+                <div class="dropdown-menu animate-in">
+                  <div id="create-preset-parent">
+                    <!-- presets added here -->
+                  </div>
+                  <div class="dropdown-divider"></div>
+                  <a id="drop-save-preset" class="preset-operation dropdown-item fw-semibold" href="#">Save preset</a>
+                  <a id="drop-update-preset" class="preset-operation dropdown-item fw-semibold" href="#">Overwrite preset</a>
+                  <a id="drop-delete-preset" class="preset-operation dropdown-item text-danger fw-semibold" href="#">Delete preset</a>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="row form-group mt-0 mb-sm-3">
+          <div class="accordion" id="options_accordion">
+            <div class="shadow accordion-item">
+              <h2 class="accordion-header" id="headingOne">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                  Title options
+                </button>
+              </h2>
+              <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#options_accordion" style="">
+                <div class="accordion-body">
+                  <div class="row">
+                    <h6>Position & Size</h6>
+                  </div>
+                  <div class="row">
+                    <div class="col">
+                      <div class="form-check form-switch">
+                        {{form.showtitle}}
+                        <label class="form-check-label" for="chkShowTitle">Show title</label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row mt-2">
+                    <div class="col-6">
+                      <label class="form-label" for="range_title_ypos">Y Offset</label>
+                      <div class="row">
+                        <div class="col-sm-5 col-md-12 col-xl-5">
+                          {{form.title_ypos}}
+                        </div>
+                        <div class="col-sm-7 col-md-12 col-xl-7 d-flex align-items-center">
+                          <input type="range" class="form-range title_control py-md-3" id="range_title_ypos" min=-540 max=540 value=0 step=10>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="row">
+                        <label for="range_fontsize" class="form-label">Size</label>
+                        <div class="col-sm-5 col-md-12 col-xl-5"> 
+                          {{form.title_font_size}}
+                        </div>
+                        <div class="col-sm-7 col-md-12 col-xl-7 d-flex align-items-center">
+                          <input type="range" class="form-range title_control py-md-3" id="range_fontsize" min=12 max=400 value=72 step=2>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <hr class="w-25 mx-auto">
+                  <h6>Appearance</h6>
+                  <div class="row mt-2">
+                    <div class="col-6">
+                      <label for="sl_title_font" class="form-label">Font</label>
+                      <!-- <svg data-toggle="tooltip" data-placement="right" title="Add more in 'My Assets'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mt-4 bi bi-patch-question-fill" viewBox="0 0 16 16" style="float:right;">
+                        <path d="M5.933.87a2.89 2.89 0 0 1 4.134 0l.622.638.89-.011a2.89 2.89 0 0 1 2.924 2.924l-.01.89.636.622a2.89 2.89 0 0 1 0 4.134l-.637.622.011.89a2.89 2.89 0 0 1-2.924 2.924l-.89-.01-.622.636a2.89 2.89 0 0 1-4.134 0l-.622-.637-.89.011a2.89 2.89 0 0 1-2.924-2.924l.01-.89-.636-.622a2.89 2.89 0 0 1 0-4.134l.637-.622-.011-.89a2.89 2.89 0 0 1 2.924-2.924l.89.01.622-.636zM7.002 11a1 1 0 1 0 2 0 1 1 0 0 0-2 0zm1.602-2.027c.04-.534.198-.815.846-1.26.674-.475 1.05-1.09 1.05-1.986 0-1.325-.92-2.227-2.262-2.227-1.02 0-1.792.492-2.1 1.29A1.71 1.71 0 0 0 6 5.48c0 .393.203.64.545.64.272 0 .455-.147.564-.51.158-.592.525-.915 1.074-.915.61 0 1.03.446 1.03 1.084 0 .563-.208.885-.822 1.325-.619.433-.926.914-.926 1.64v.111c0 .428.208.745.585.745.336 0 .504-.24.554-.627z"/>
+                      </svg> -->
+                      <select class="form-select preview-control title_control" id="sl_title_font">
+                        <option value="Blacklisted.ttf">Blacklisted</option>
+                        <option value="coolvetica rg.ttf">Coolvetica</option>
+                        <option value="DISTGRG_.ttf">Distant Galaxy</option>
+                        {% for fontname in fonts.keys() %}
+                        <option value="{{fonts[fontname]}}">{{fontname}}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-4">
+                      <label for="title_font_colour_picker" class="form-label">Colour</label>
+                      <div class="row">
+                        <div class="col">
+                          <!-- use flask form -->
+                          <!-- <input onchange="console.log(this.value)" class="form-control preview-control px-3 title_control" id="title_font_colour" name="title_font_colour" required="" type="text" value="#FFFFFF"> -->
+                          <!-- <input class="form-control px-3 title_control" id="title_font_colour" name="title_font_colour" required="" type="text" value="#000000" readonly> -->
+                          {{form.title_font_colour}}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-2">
+                      <label for="title_font_colour_picker" class="form-label">
+                        <!-- <svg data-toggle="tooltip" data-placement="right" title="Want to type in the color HEX code? Open the picker and click the R G B or H S L options to cycle through to HEX" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class=" bi bi-patch-question-fill" viewBox="0 0 16 16" style="float:right;">
+                          <path d="M5.933.87a2.89 2.89 0 0 1 4.134 0l.622.638.89-.011a2.89 2.89 0 0 1 2.924 2.924l-.01.89.636.622a2.89 2.89 0 0 1 0 4.134l-.637.622.011.89a2.89 2.89 0 0 1-2.924 2.924l-.89-.01-.622.636a2.89 2.89 0 0 1-4.134 0l-.622-.637-.89.011a2.89 2.89 0 0 1-2.924-2.924l.01-.89-.636-.622a2.89 2.89 0 0 1 0-4.134l.637-.622-.011-.89a2.89 2.89 0 0 1 2.924-2.924l.89.01.622-.636zM7.002 11a1 1 0 1 0 2 0 1 1 0 0 0-2 0zm1.602-2.027c.04-.534.198-.815.846-1.26.674-.475 1.05-1.09 1.05-1.986 0-1.325-.92-2.227-2.262-2.227-1.02 0-1.792.492-2.1 1.29A1.71 1.71 0 0 0 6 5.48c0 .393.203.64.545.64.272 0 .455-.147.564-.51.158-.592.525-.915 1.074-.915.61 0 1.03.446 1.03 1.084 0 .563-.208.885-.822 1.325-.619.433-.926.914-.926 1.64v.111c0 .428.208.745.585.745.336 0 .504-.24.554-.627z"/>
+                        </svg> -->
+                        <i class="bi bi-patch-question-fill" data-toggle="tooltip" data-placement="right" title="Try opening the picker and clicking through the RGB, HSL & HEX options!"></i>
+                      </label>
+                      <input class="color-picker form-control title_control" id="title_font_colour_picker" name="title_font_colour_picker" type="color" value="#FFFFFF" style="padding:0.3rem; height: calc(1.5em + .75rem + 2px);"></input>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="shadow accordion-item">
+              <h2 class="accordion-header" id="headingTwo">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                  FX & Overlays
+                </button>
+              </h2>
+              <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#options_accordion" >
+                <div class="accordion-body">
+                  <h6>Image tools</h6>
+                  <div class="row">
+                    <div class="col">
+                      <div class="form-check form-switch">
+                        <!-- <input class="form-check-input" type="checkbox" id="chkBlur" checked=""> -->
+                        {{form.add_blur}}
+                        <label class="form-check-label" for="chkBlur">Blur background   </label>
+                        <svg data-toggle="tooltip" data-placement="right" title="Adds nice finish to images that aren't typical landscape size (16:9)" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-patch-question-fill" viewBox="0 0 16 16">
+                          <path d="M5.933.87a2.89 2.89 0 0 1 4.134 0l.622.638.89-.011a2.89 2.89 0 0 1 2.924 2.924l-.01.89.636.622a2.89 2.89 0 0 1 0 4.134l-.637.622.011.89a2.89 2.89 0 0 1-2.924 2.924l-.89-.01-.622.636a2.89 2.89 0 0 1-4.134 0l-.622-.637-.89.011a2.89 2.89 0 0 1-2.924-2.924l.01-.89-.636-.622a2.89 2.89 0 0 1 0-4.134l.637-.622-.011-.89a2.89 2.89 0 0 1 2.924-2.924l.89.01.622-.636zM7.002 11a1 1 0 1 0 2 0 1 1 0 0 0-2 0zm1.602-2.027c.04-.534.198-.815.846-1.26.674-.475 1.05-1.09 1.05-1.986 0-1.325-.92-2.227-2.262-2.227-1.02 0-1.792.492-2.1 1.29A1.71 1.71 0 0 0 6 5.48c0 .393.203.64.545.64.272 0 .455-.147.564-.51.158-.592.525-.915 1.074-.915.61 0 1.03.446 1.03 1.084 0 .563-.208.885-.822 1.325-.619.433-.926.914-.926 1.64v.111c0 .428.208.745.585.745.336 0 .504-.24.554-.627z"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="col">
+                      <!-- blur_level doesn't actually do anything, #range_blurlevel (below)is used instead, some weird bug preventing the value changing on update -->
+                      {{form.blur_level}}
+                      <div class="row">
+                        <div class="col-auto">
+                          <label class="form-label" for="range_blurlevel">Blur level</label>
+                        </div>
+                        <div class="col">
+                          <div class="d-flex align-items-center">
+                            <!-- #range_blurlevel -->
+                            <input type="range" class="form-range" id="range_blurlevel" min=0 max=10 value=5 step=1>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <hr class="w-25 mx-auto">
+                  <h6 class="mt-2">Overlay FX</h6>
+                  <div class="row">
+                    <div class="col">
+                      {{form.fx_select}}
+                      {{form.fx_opacity}}
+                      <ul class="nav nav-tabs justify-content-center  nav-fill" role="tablist">
+                        <li class="nav-item fx-tab" role="presentation">
+                          <a class="nav-link active" data-bs-toggle="tab" href="#tab_fx_none" aria-selected="true" role="tab" data-value="none">None</a>
+                        </li>
+                        <li class="nav-item fx-tab" role="presentation">
+                          <a class="nav-link  {{ 'disabled' if user.tier == 'free' else '' }} position-relative" data-bs-toggle="tab" href="#tab_fx_light" aria-selected="false" role="tab" data-value="light">
+                            Light
+                            <img src="{{ url_for('static', filename='img/plus-icon.png') }}" class="tier-badge {{ 'd-none' if user.tier in ['plus', 'unlimited'] else '' }} "> 
+                          </a>
+                        </li>
+                        <li class="nav-item fx-tab" role="presentation">
+                          <a class="nav-link  {{ 'disabled' if user.tier == 'free' else '' }} position-relative" data-bs-toggle="tab" href="#tab_fx_tape" aria-selected="false" role="tab" data-value="tape">
+                            Tape
+                            <img src="{{ url_for('static', filename='img/plus-icon.png') }}" class="tier-badge {{ 'd-none' if user.tier in ['plus', 'unlimited'] else '' }} "> 
+                          </a>
+                        </li>
+                        <li class="nav-item fx-tab" role="presentation">
+                          <a class="nav-link  {{ 'disabled' if user.tier in ['free', 'plus'] else '' }} position-relative" data-bs-toggle="tab" href="#tab_fx_scratch" aria-selected="false" role="tab" data-value="scratch">
+                            Scratch
+                            <img src="{{ url_for('static', filename='img/unlim-icon.png') }}" class="tier-badge {{ 'd-none' if user.tier == 'unlimited' else '' }} "> 
+                          </a>
+                        </li>
+                        <li class="nav-item fx-tab" role="presentation">
+                          <a class="nav-link  {{ 'disabled' if user.tier in ['free', 'plus'] else '' }} position-relative" data-bs-toggle="tab" href="#tab_fx_dust" aria-selected="false" role="tab" data-value="dust">
+                            Dust
+                            <img src="{{ url_for('static', filename='img/unlim-icon.png') }}" class="tier-badge {{ 'd-none' if user.tier == 'unlimited' else '' }} "> 
+                          </a>
+                        </li>
+                        <li class="nav-item fx-tab" role="presentation">
+                          <a class="nav-link  {{ 'disabled' if user.tier in ['free', 'plus'] else '' }} position-relative" data-bs-toggle="tab" href="#tab_fx_digital" aria-selected="false" role="tab" data-value="digital">
+                            Digital
+                            <img src="{{ url_for('static', filename='img/unlim-icon.png') }}" class="tier-badge {{ 'd-none' if user.tier == 'unlimited' else '' }} "> 
+                          </a>
+                        </li>
+                      </ul>
+                      <div id="fx_tab" class="tab-content row">
+                        <!-- No FX -->
+                        <div class="tab-pane fade active show" id="tab_fx_none" role="tabpanel">
+                          <div class="row">
+                            <div class="col py-4 px-5">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto img-fluid rounded-3"  aria-label="Placeholder: Image cap" focusable="false" role="img" preserveAspectRatio="xMidYMid slice" viewBox="0 0 318 180" style="font-size:1.125rem;text-anchor:middle; border-radius: 2vh;" >
+                                <rect width="100%" height="100%" fill="#868e96"></rect>
+                                <text x="50%" y="50%" fill="#dee2e6" dy=".3em">No FX</text>
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Dust FX -->
+                        <div class="tab-pane fade" id="tab_fx_dust" role="tabpanel">
+                          <div class="row">
+                            <div class="col py-4 px-5">
+                              <img loading="lazy" id="fx_dust_img" class="mx-auto img-fluid rounded-3 fx-preview" src="{{ url_for('static', filename='img/fx-preview/dust_preview.gif') }}" >
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Scratch FX -->
+                        <div class="tab-pane fade" id="tab_fx_scratch">
+                          <div class="row">
+                            <div class="col py-4 px-5">
+                              <img loading="lazy"  id="fx_scratch_img" class="mx-auto img-fluid rounded-3 fx-preview" src="{{ url_for('static', filename='img/fx-preview/scratch_preview.gif') }}" >
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Digital FX -->
+                        <div class="tab-pane fade" id="tab_fx_digital">
+                          <div class="row">
+                            <div class="col py-4 px-5">
+                              <img loading="lazy"  id="fx_digital_img" class="mx-auto img-fluid rounded-3 fx-preview" src="{{ url_for('static', filename='img/fx-preview/digital_preview.gif') }}" >
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Light FX -->
+                        <div class="tab-pane fade" id="tab_fx_light">
+                          <div class="row">
+                            <div class="col py-4 px-5">
+                              <img loading="lazy"  id="fx_light_img" class="mx-auto img-fluid rounded-3 fx-preview" src="{{ url_for('static', filename='img/fx-preview/light_preview.gif') }}" >
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Tape FX -->
+                        <div class="tab-pane fade" id="tab_fx_tape">
+                          <div class="row">
+                            <div class="col py-4 px-5">
+                              <img loading="lazy"  id="fx_tape_img" class="mx-auto img-fluid rounded-3 fx-preview" src="{{ url_for('static', filename='img/fx-preview/tape_preview.gif') }}" >
+                            </div>
+                          </div>
+                        </div>
+                        
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col">
+                      <label for="fx_opacity" class="form-label p-0 m-0 small mx-auto text-center">Opacity</label>
+                    </div>
+                    <div class="col">
+                      <input step="0.05" oninput="" value="0.3" min='0' max='1' type="range" class="" id="fx_opacity"
+                      data-filter="opacity" disabled='disabled'>
+                    </div>
+                    <div class="col">
+                      <span id='fx_opacity_label' class="text-center">0.3</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="shadow accordion-item">
+              <h2 class="accordion-header" id="headingThree">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                  Optional track metadata
+                </button>
+              </h2>
+              <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#options_accordion" style="">
+                <div class="accordion-body">
+                  <div class="row form-group">
+                    <div class="col-md-6">
+                      <label class="col-form-label mt-1 py-1" for="inputDefault">BPM</label>
+                      <input type="text" class="form-control" placeholder="e.g. 140" id="inputDefault">
+                    </div>
+                    <div class="col-md-6">
+                      <label for="keySelect" class="col-form-label mt-1 py-1">Key</label>
+                      <select class="form-select" id="keySelect">
+                        <option>No key</option>
+                        <option>A Min</option>
+                        <option>A Maj</option>
+                        <option>A# Min</option>
+                        <option>A# Maj</option>
+                        <option>B Min</option>
+                        <option>B Maj</option>
+                        <option>C Min</option>
+                        <option>C Maj</option>
+                        <option>C# Min</option>
+                        <option>C# Maj</option>
+                        <option>D Min</option>
+                        <option>D Maj</option>
+                        <option>D# Min</option>
+                        <option>D# Maj</option>
+                        <option>E Min</option>
+                        <option>E Maj</option>
+                        <option>F Min</option>
+                        <option>F Maj</option>
+                        <option>F# Min</option>
+                        <option>F# Maj</option>
+                        <option>G Min</option>
+                        <option>G Maj</option>
+                        <option>G# Min</option>
+                        <option>G# Maj</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-lg-6">
+                      <label class="col-form-label mt-3 py-1" for="inputDefault">Tags</label>
+                      <svg data-toggle="tooltip" data-placement="right" title="BeatCloud Tags - These are separate from other platforms such as YouTube." xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="mt-4 bi bi-patch-question-fill" viewBox="0 0 16 16" style="float:right;">
+                        <path d="M5.933.87a2.89 2.89 0 0 1 4.134 0l.622.638.89-.011a2.89 2.89 0 0 1 2.924 2.924l-.01.89.636.622a2.89 2.89 0 0 1 0 4.134l-.637.622.011.89a2.89 2.89 0 0 1-2.924 2.924l-.89-.01-.622.636a2.89 2.89 0 0 1-4.134 0l-.622-.637-.89.011a2.89 2.89 0 0 1-2.924-2.924l.01-.89-.636-.622a2.89 2.89 0 0 1 0-4.134l.637-.622-.011-.89a2.89 2.89 0 0 1 2.924-2.924l.89.01.622-.636zM7.002 11a1 1 0 1 0 2 0 1 1 0 0 0-2 0zm1.602-2.027c.04-.534.198-.815.846-1.26.674-.475 1.05-1.09 1.05-1.986 0-1.325-.92-2.227-2.262-2.227-1.02 0-1.792.492-2.1 1.29A1.71 1.71 0 0 0 6 5.48c0 .393.203.64.545.64.272 0 .455-.147.564-.51.158-.592.525-.915 1.074-.915.61 0 1.03.446 1.03 1.084 0 .563-.208.885-.822 1.325-.619.433-.926.914-.926 1.64v.111c0 .428.208.745.585.745.336 0 .504-.24.554-.627z"/>
+                      </svg>
+                      <div class="input-group">
+                        <input id="tag_input" type="text" class="form-control py-2 px-2" placeholder="e.g. Drill" aria-label="Recipient's username" aria-describedby="button-addon2">
+                        <button class="btn btn-secondary" type="button" id="btnAddTags" onclick="AddTag()">Add</button>
+                      </div>
+                    </div>
+                    <div class="col-lg-6 pt-4">
+                      <!-- Tags to be placed here -->
+                      <div class="card bg-light h-100" style="min-height: 3rem;">
+                        <div id="tags_box" class="card-body p-2">
+
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="shadow accordion-item">
+              <h2 class="accordion-header" id="headingFour">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                  Video properties
+                </button>
+              </h2>
+              <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#options_accordion" style="">
+                <div class="accordion-body">
+                  <div class="row">
+                    <div class="col">
+                      <h6>Video Resolution</h6>
+                      <!-- implement with flask forms -->
+                      {{form.video_quality}}
+    
+                      <div class="btn-group w-100 px-1" role="group" aria-label="Video quality toggle group">
+                        <input type="radio" class="btn-check quality-check" name="quality_radio" id="radio_720" autocomplete="off" checked="" value="720">
+                        <label class="btn btn-outline-primary" for="radio_720">720p</label>
+
+                        <!-- Hover effect "Beatcloud Plus Feature!"-->
+                        <!-- ensure serverside testing of account type -->
+                        <!-- <input type="radio" class="btn-check quality-check bc-plus-locked" name="quality_radio" id="radio_1080" autocomplete="off" disabled>  -->
+                        <input type="radio" class="btn-check quality-check bc-plus-locked" name="quality_radio" id="radio_1080" autocomplete="off" value="1080" disabled> 
+                        <label class="btn btn-outline-primary" for="radio_1080">1080p</label>
+                      </div> 
+                    </div>
+                    <div class="col">
+                      <h6>Video Framerate</h6>
+                      <!-- implement with flask forms -->
+                      <!-- {{form.video_quality}} -->
+    
+                      <div class="btn-group w-100 px-1" role="group" aria-label="Video Framerate toggle group">
+                        <input type="radio" class="btn-check fps-check" name="fps_radio" id="fps_radio_24" autocomplete="off" checked="" value="15">
+                        <label class="btn btn-outline-primary" for="fps_radio_24">15</label>
+
+                        <!-- Hover effect "Beatcloud Plus Feature!"-->
+                        <!-- ensure serverside testing of account type -->
+                        <!--  -->
+                        <input type="radio" class="btn-check fps-check bc-plus-locked" name="fps_radio" id="fps_radio_60" autocomplete="off" value="25" disabled> 
+                        <label class="btn btn-outline-primary" for="fps_radio_60">25</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-1 order-3 order-md-2">
+        <!-- spacer -->
+      </div>
+      <div class="col-md-6 order-1 order-md-3">
+        <div class="row">
+          <!-- <h4>
+            Video Preview:
+          </h4> -->
+          <span id="preview-container">
+            <div class="overlay-container">
+              <!-- Image -->
+              <img id="img_preview" class="w-100 rounded-3 shadow" src="{{ url_for('static', filename='img/PREVIEWimg.png') }}"  >
+
+              <!-- FX preview -->
+              <div class="overlay">
+                <img id="fx_preview" class="w-100 rounded-3 visually-hidden" src="{{ url_for('static', filename='img/fx-preview/dust_preview.gif') }}"  style="opacity:0.3;">
+              </div>
+
+              <!-- Layers -->
+              <div class="overlay">
+                <img id="layers_preview" class="w-100 rounded-3" src=""  style="">
+              </div>
+
+              <!-- Title -->
+              <div class="overlay">
+                <img id="title_preview" class="w-100 rounded-3" src=""  style=" ">
+              </div>
+              <!-- Darken -->
+              <div class="overlay overlay-hidden darken rounded-3"></div>
+              <!-- Spinner icon -->
+              <div class="overlay overlay-hidden" id="ico_loading" style="opacity: 0;">
+                <div class="overlay-icon">
+                  <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+                </div>
+              </div>
+              <!-- Edit Image Icon -->
+              <div class="overlay overlay-hidden">
+                <div class="overlay-icon">
+                  <svg id="edit-bg-icon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="white" class="bi bi-pencil-square w-100" viewBox="0 0 16 16">
+                    <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                    <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                  </svg>
+                  <h5 id="edit-bg-text" style="color: white;">Edit background</h5>
+                </div>
+              </div>
+            </div>
+          </span>
+          <p id="random_frame_notifier" class="mb-0 visually-hidden text-center text-muted pt-2">Showing GIF preview of uploaded video. <span class="text-primary" style="cursor:pointer;" onclick="refresh_frames()">Generate new GIF</span></p>
+        </div>
+        <div class="row mt-4">
+          <!-- <div class="row">
+            <small class="text-muted">The base of the visualizer.</small>
+          </div> -->
+          <div class="row mx-auto">
+            <ul class="nav nav-tabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <a class="nav-link base-nav active" href="#image_tab" data-bs-toggle="tab" aria-selected="true" role="tab">Image</a>
+              </li>
+              <li class="nav-item" role="presentation">
+                <a class="nav-link base-nav" data-bs-toggle="tab" href="#video_tab" aria-selected="false" role="tab" tabindex="-1">Video</a>
+              </li>
+            </ul>
+            <div id="base_tab" class="tab-content p-2 pt-0">
+              <div class="tab-pane fade active show" id="image_tab" role="tabpanel">
+                <div class="shadow row overlay-container justify-content-center">
+                  <div class="col p-0">
+                    <div class="card drop-area mb-3 h-100 w-100 animate-in" id="image-drop-area">
+                      <div class="card-body text-center row d-flex flex-wrap align-items-center py-3">
+                        <div class="row d-none d-md-block"> <!-- hide in mobile view-->
+                          <i id="image-drop-icon" class="animate-in bi bi-box-arrow-in-down text-primary" style="font-size:2rem; "></i> 
+                          <!-- <i class="bi bi-box-arrow-in-down" style="font-size:2rem; color:#007BFF;"></i> i like dis color tho -->
+                        </div>
+                        <div class="row">
+                          <div class="col">
+                            <span class="mb-0">Drag & drop image here, or </span><label style="cursor:pointer;" for="fileUpload" class="text-primary" id="btn-choose-file-label">browse</label>
+                            <p class="text-muted small m-1">Supports: PNG, JPG, JPEG</p>
+                            <!-- <input type="file" id="input_video" hidden="" accept=".mp4, .mov"> -->
+                            {{form.imgFile}} <!-- make hidden -->
+                          </div>
+                        </div>
+                      </div>
+                      <div class="card-footer bg-white py-1">
+                        <div class="row">
+                          <div id="" class="col-8 col-lg-9 p-1">
+                            {{form.imgURL}}                                        
+                          </div>
+                          <div id="" class="col-4 col-lg-3 p-1">
+                            <button class="btn btn-outline-primary w-100" type="button" id="uploadButton">Upload</button>  
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="tab-pane fade" id="video_tab" role="tabpanel" >
+                <div class="shadow row overlay-container justify-content-center">
+                    <div class="col p-0">
+                        <div class="card drop-area mb-3 h-100 w-100 animate-in" id="video-drop-area">
+                            <div class="card-body text-center row d-flex flex-wrap align-items-center py-3">
+                                <div class="row d-none d-md-block"> <!-- hide in mobile view-->
+                                    <i id="video-drop-icon" class="animate-in bi bi-box-arrow-in-down text-primary" style="font-size:2rem; "></i> 
+                                    <!-- <i class="bi bi-box-arrow-in-down" style="font-size:2rem; color:#007BFF;"></i> i like dis color -->
+                                </div>
+                                <div class="row">
+                                  <div class="col">
+                                    <span class="mb-0">Drag & drop video here, or </span><label style="cursor:pointer;" for="input_video" class="text-primary" id="btn-choose-file-label">browse</label>
+                                    <p class="text-muted small m-1">Supports: MOV, MP4</p>
+                                    <input type="file" id="input_video" hidden accept=".mp4, .mov"/>
+                                  </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-white py-1">
+                                <div class="row">
+                                    <div id="video_status_container" class="col px-4 py-1">
+                                      <input class="form-control text-center text-muted visualizer_base_input" id="video_input" type="text" placeholder="No file chosen" readonly="">
+                                        <!-- <label id="btn-choose-file-label" for="input_video" class="btn text-white btn-secondary py-1 my-2 mx-auto w-100" >Choose file</label> -->
+                                        <div id="video_progress_container" class="progress " style="height: 1rem;">
+                                            <div id="video_progress" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>            
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <button class="btn btn-lg btn-primary w-50 mx-auto shadow" type="submit" id="btnCreate">Create</button>
+    </div>
+  </form>
+</div>
+<!-- SAVE PRESET MODAL -->
+<div class="modal" id="savePresetModal" tabindex="-1" aria-labelledby="savePresetModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="savePresetModalLabel">Save Preset</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Save the current visual options as a preset:</p>
+        <input type="text" class="form-control" id="presetName" placeholder="Enter preset name">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="savePresetButton">Save Preset</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- UPDATE PRESET MODAL -->
+<div class="modal" id="updatePresetModal" tabindex="-1" aria-labelledby="updatePresetModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="updatePresetModalLabel">Update Preset</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Select the preset you wish to overwrite with the current settings:</p>
+        <select class="form-select mb-3" id="presetList">
+          <!-- Options aqui -->
+        </select>
+        <p>Preset name:</p>
+        <input type="text" class="form-control" id="presetNewName" placeholder="Enter new preset name">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="updatePresetButton">Update Preset</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- DELETE PRESET MODAL -->
+<div class="modal" id="deletePresetModal" tabindex="-1" aria-labelledby="deletePresetModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deletePresetModalLabel">Delete Preset</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Please select the preset you want to delete:</p>
+        <select class="form-select" id="presetDeleteList">
+            <!-- Options populated dynamically -->
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" id="deletePresetButton">Delete Preset</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT BACKGROUND MODAL -->
+<div class="modal fade" id="imagemodal">
+  <div class="create-modal modal-dialog modal-dialog-centered modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title w-100">Edit background <small class="text-muted">with BeatCloud</small></h3>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
+      <hr class="w-20 mt-0" >
+      <div class="modal-body">
+        <div class="row container-fluid m-0 p-0">
+          <div id="layer-parent" class="col-lg-2">
+            <!-- Layers -->
+            <div id="layer-heading" class="row">
+              <h4>Layers</h4>
+            </div>
+            <div class="row mt-2">
+              <button id="bg_layer_btn" onclick="select_layer(0)" class="btn btn-primary mx-auto px-4 py-1 w-100 btn-img-layer">
+                Background
+              </button>
+            </div>
+            <div id="add-layer-btn" class="row mt-2">
+              <div class="mx-auto w-75 clickable-label btn-img-layer py-1" onclick="create_layer()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
+                  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                  <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                </svg>
+                Add layer
+              </div>
+            </div>
+          </div>
+          <!-- Central image -->
+          <div id="col_image" class="col-lg-8">
+            <div id="edit-img-container" class="overlay-container">
+              <!-- Image -->
+              <img id="modal_gif_preview" class="w-100" src="{{ url_for('static', filename='img/PREVIEWimg.png') }}">
+
+              <div class="overlay">
+                <canvas class="w-100" width="1920" height="1080" id="background_canvas" style="z-index: 0;"></canvas>
+              </div>
+
+              <div class="overlay">
+                <canvas class="w-100" width="1920" height="1080" id="layers_canvas" style="z-index:1;"></canvas>
+              </div>
+
+              <!-- title preview -->
+              <div class="overlay">
+                <img id="modal_title_preview" class="w-100 visually-hidden" src=""">
+              </div>
+
+              <!-- Spinner icon -->
+              <div class="overlay overlay-hidden" id="ico_modal_loading" style="opacity: 0;">
+                <div class="overlay-icon">
+                  <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+                </div>
+              </div>
+
+              <!-- DEBUG -->
+              <p class="visually-hidden" id="debug_size">size: </p>
+              <p class="visually-hidden" id="debug_pos">pos: </p>
+              <p class="visually-hidden" id="debug_centre">centre: </p>
+              <p class="visually-hidden" id="debug_anchor">anchor: </p>
+              <p class="visually-hidden" id="debug_scale">scale: </p>
+            </div>
+            <!-- Show title switch -->
+            <div class="row">
+              <div class="col-6 ">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="switch_showtitle"  onchange="showhide_title(this.checked)">
+                  <label class="form-check-label" for="switch_showtitle">Show title</label>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-check form-switch" style="float:right;">
+                  <input class="form-check-input" type="checkbox" id="switch_showlayers"  onchange="showhide_layers(this.checked)">
+                  <label class="form-check-label" for="switch_showlayers">Show layers</label>
+                </div>
+                <!-- <p id="layers_status" style="float:right;" class="visually-hidden animate-in">Hiding added layers</p> -->
+              </div>
+            </div>
+          </div>
+          <!-- Layer Properties -->
+          <div id="background_properties" class="col-lg-2" style="overflow: hidden; overflow-y: scroll; height:0;" data-toggle="tooltip" data-placement="left" title="Cannot apply filters to videos!">
+            <div class="row">
+              <h4>Properties: <small class="text-muted">Background</small></h4>
+            </div>
+            <div class="row">
+              <div class="col-auto">
+                <h6>Filters:</h6>
+              </div>
+              <div class="col">
+                <!-- tooltip -->
+              </div>
+            </div>
+            <div id="Filters" class="row px-3 mb-3">
+              <fieldset id="FilterControls">
+                <!-- -100 to 100 -->
+                <div class="Filter">
+                  <div class="FilterSetting row">
+                    <label for="slide_brightness" class="form-label p-0 m-0 small">Brightness</label>
+                    <input step="1" oninput="" value="0" min='-100' max='100' type="range" class="w-75 filter-range form-range" id="slide_brightness"
+                    data-filter="brightness">
+                    <span class="FilterValue d-none d-lg-block w-25">0</span>
+                  </div>
+                </div>
+                <div class="Filter">
+                  <div class="FilterSetting row">
+                    <label for="slide_contrast" class="form-label p-0 m-0 small">Contrast</label>
+                    <input step="1" oninput="" value="0" min='-100' max='100' type="range" class="w-75 filter-range form-range" id="slide_contrast"
+                    data-filter="contrast">
+                    <span class="FilterValue w-25">0</span>
+                  </div>
+                </div>
+                <div class="Filter">
+                  <div class="FilterSetting row">
+                    <label for="slide_saturation" class="form-label p-0 m-0 small">Saturation</label>
+                    <input step="1" oninput="" value="0" min='-100' max='100' type="range" class="w-75 filter-range form-range" id="slide_saturation"
+                    data-filter="saturation">
+                    <span class="FilterValue w-25">0</span>
+                  </div>
+                </div>
+                <div class="Filter">
+                  <div class="FilterSetting row">
+                    <label for="slide_exposure" class="form-label p-0 m-0 small">Exposure</label>
+                    <input step="1" oninput="" value="0" min='-100' max='100' type="range" class="w-75 filter-range form-range" id="slide_exposure"
+                    data-filter="exposure">
+                    <span class="FilterValue w-25">0</span>
+                  </div>
+                </div>
+                <div class="Filter">
+                  <div class="FilterSetting row">
+                    <label for="slide_vibrance" class="form-label p-0 m-0 small">Vibrance</label>
+                    <input step="1" oninput="" value="0" min='-100' max='100' type="range" class="w-75 filter-range form-range" id="slide_vibrance"
+                    data-filter="vibrance">
+                    <span class="FilterValue w-25">0</span>
+                  </div>
+                </div>
+                <!-- 0 to 100 -->
+                <div class="Filter">
+                  <div class="FilterSetting row">
+                    <label for="slide_hue" class="form-label p-0 m-0 small">Hue</label>
+                    <input step="1" oninput="" value="0" min='0' max='100' type="range" class="w-75 filter-range form-range" id="slide_hue"
+                    data-filter="hue">
+                    <span class="FilterValue w-25">0</span>
+                  </div>
+                </div>
+                <div class="Filter">
+                  <div class="FilterSetting row">
+                    <label for="slide_gamma" class="form-label p-0 m-0 small">Gamma</label>
+                    <input step="0.1" oninput="" value="0" min='0' max='10' type="range" class="w-75 filter-range form-range" id="slide_gamma"
+                    data-filter="gamma">
+                    <span class="FilterValue w-25">0</span>
+                  </div>
+                </div>
+                <div class="Filter">
+                  <div class="FilterSetting row">
+                    <label for="slide_stackblur" class="form-label p-0 m-0 small">Stack blur</label>
+                    <input step="1" oninput="" value="0" min='0' max='20' type="range" class="w-75 filter-range form-range" id="slide_stackblur"
+                    data-filter="stackBlur">
+                    <span class="FilterValue w-25">0</span>
+                  </div>
+                </div>
+                <div class="Filter">
+                  <div class="FilterSetting row">
+                    <label for="slide_clip" class="form-label p-0 m-0 small">Clip</label>
+                    <input step="1" oninput="" value="0" min='0' max='100' type="range" class="w-75 filter-range form-range" id="slide_clip"
+                    data-filter="clip">
+                    <span class="FilterValue w-25">0</span>
+                  </div>
+                </div>
+                <div class="Filter">
+                  <div class="FilterSetting row">
+                    <label for="slide_sepia" class="form-label p-0 m-0 small">Sepia</label>
+                    <input step="1" oninput="" value="0" min='0' max='100' type="range" class="w-75 filter-range form-range" id="slide_sepia"
+                    data-filter="sepia">
+                    <span class="FilterValue w-25">0</span>
+                  </div>
+                </div>
+                <div class="Filter">
+                  <div class="FilterSetting row">
+                    <label for="slide_noise" class="form-label p-0 m-0 small">Noise</label>
+                    <input step="1" oninput="" value="0" min='0' max='100' type="range" class="w-75 filter-range form-range" id="slide_noise"
+                    data-filter="noise">
+                    <span class="FilterValue w-25">0</span>
+                  </div>
+                </div>
+                <div class="Filter">
+                  <div class="FilterSetting row">
+                    <label for="slide_sharpen" class="form-label p-0 m-0 small">Sharpen</label>
+                    <input step="1" oninput="" value="0" min='0' max='100' type="range" class="w-75 filter-range form-range" id="slide_sharpen"
+                    data-filter="sharpen">
+                    <span class="FilterValue w-25">0</span>
+                  </div>
+                </div>
+                <!-- Reset -->
+                <button id="btn_reset_filters" type="button" class="btn btn-danger py-1 mt-2" name="button" onclick="">Reset filters</button>
+              </fieldset>
+            </div>
+          </div>
+          <div id="layer_properties" class="col-lg-2 visually-hidden">
+            <div class="row">
+              <h4>Properties: <small id="prop-layer-name" class="text-muted">Background</small></h4>
+            </div>
+            <div class="row">
+              <div class="col-auto">
+                <h6>Source:</h6>
+              </div>
+              <div class="col text-center">
+                <svg data-toggle="tooltip" data-placement="bottom" title="Upload more in 'My assets'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-patch-question-fill" viewBox="0 0 16 16" style="float:right;">
+                  <path d="M5.933.87a2.89 2.89 0 0 1 4.134 0l.622.638.89-.011a2.89 2.89 0 0 1 2.924 2.924l-.01.89.636.622a2.89 2.89 0 0 1 0 4.134l-.637.622.011.89a2.89 2.89 0 0 1-2.924 2.924l-.89-.01-.622.636a2.89 2.89 0 0 1-4.134 0l-.622-.637-.89.011a2.89 2.89 0 0 1-2.924-2.924l.01-.89-.636-.622a2.89 2.89 0 0 1 0-4.134l.637-.622-.011-.89a2.89 2.89 0 0 1 2.924-2.924l.89.01.622-.636zM7.002 11a1 1 0 1 0 2 0 1 1 0 0 0-2 0zm1.602-2.027c.04-.534.198-.815.846-1.26.674-.475 1.05-1.09 1.05-1.986 0-1.325-.92-2.227-2.262-2.227-1.02 0-1.792.492-2.1 1.29A1.71 1.71 0 0 0 6 5.48c0 .393.203.64.545.64.272 0 .455-.147.564-.51.158-.592.525-.915 1.074-.915.61 0 1.03.446 1.03 1.084 0 .563-.208.885-.822 1.325-.619.433-.926.914-.926 1.64v.111c0 .428.208.745.585.745.336 0 .504-.24.554-.627z"/>
+                </svg>
+              </div>
+            </div>
+            <div class="row p-1">
+              <div class="form-group">
+                <select class="form-select py-1 px-2" id="source_select">
+                  {% for layername in layers.keys() %}
+                    <option value="{{layers[layername]}}">{{layername}}</option>
+                  {% endfor %}
+                  <!-- added via js -->
+                </select>
+              </div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-auto">
+                <h6>Size & Position:</h6>
+              </div>
+              <div class="col text-center">
+                <svg data-toggle="tooltip" data-placement="bottom" title="Hold SHIFT for fine tuning" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-patch-question-fill" viewBox="0 0 16 16" style="float:right;">
+                  <path d="M5.933.87a2.89 2.89 0 0 1 4.134 0l.622.638.89-.011a2.89 2.89 0 0 1 2.924 2.924l-.01.89.636.622a2.89 2.89 0 0 1 0 4.134l-.637.622.011.89a2.89 2.89 0 0 1-2.924 2.924l-.89-.01-.622.636a2.89 2.89 0 0 1-4.134 0l-.622-.637-.89.011a2.89 2.89 0 0 1-2.924-2.924l.01-.89-.636-.622a2.89 2.89 0 0 1 0-4.134l.637-.622-.011-.89a2.89 2.89 0 0 1 2.924-2.924l.89.01.622-.636zM7.002 11a1 1 0 1 0 2 0 1 1 0 0 0-2 0zm1.602-2.027c.04-.534.198-.815.846-1.26.674-.475 1.05-1.09 1.05-1.986 0-1.325-.92-2.227-2.262-2.227-1.02 0-1.792.492-2.1 1.29A1.71 1.71 0 0 0 6 5.48c0 .393.203.64.545.64.272 0 .455-.147.564-.51.158-.592.525-.915 1.074-.915.61 0 1.03.446 1.03 1.084 0 .563-.208.885-.822 1.325-.619.433-.926.914-.926 1.64v.111c0 .428.208.745.585.745.336 0 .504-.24.554-.627z"/>
+                </svg>
+              </div>
+            </div>
+            <div class="row px-3">
+              <label for="slide_xpos" class="form-label p-0 m-0 small">X Pos</label>
+              <input step="40" oninput="" value="960" min='0' max='1920' type="range" class="pos-range form-range" id="slide_xpos">
+              <label for="slide_ypos" class="form-label p-0 m-0 small">Y Pos</label>
+              <input step="40" oninput="" value= "540" min='0' max='1080' type="range" class="pos-range form-range" id="slide_ypos">
+            </div>
+            <div class="row px-3">
+              <label for="slide_scale" class="form-label p-0 m-0 small">Scale</label>
+              <input min="0.1" max="1.9" step="0.1" type="range" class="form-range" id="slide_scale">
+            </div><!-- Reset -->
+            <div class="row px-3">
+              <button id="btn_reset_pos" type="button" class="btn btn-danger py-1 mt-2 mx-auto" name="button" onclick="reset_pos()">Reset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="save_image"type="button" class="btn btn-primary">Save changes</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- preview_title.js must be loaded first as upload uses a function from it -->
+<script src="{{ url_for('static', filename='js/preview_title.js') }}"></script>
+<script src="{{ url_for('static', filename='js/upload_base.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/Layer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/editImg.js') }}"></script>
+<script src="{{url_for('static', filename='js/dragndrop_video.js')}}"></script>
+<script src="{{url_for('static', filename='js/presets.js')}}"></script>
+<script type="text/javascript">
+  var user_id = '{{user.id}}';
+
+  //layer controls
+  $("#slide_xpos").on("input", function() { move_layer_x(this.value); });
+  $("#slide_ypos").on("input", function() { move_layer_y(this.value); });
+  $("#slide_scale").on("input", function() { scale_layer(selected_layer.id, this.value); });
+
+  // Color picker
+  colorPicker = document.getElementById("title_font_colour_picker");
+  colorPicker.addEventListener("input", watchColorPicker, false);
+  // send http preview request on CHANGE not INPUT. for performance?
+  //colorPicker.addEventListener("change", watchColorPicker, false);
+</script>
+
+<!-- camanjs -->
+<script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.2/underscore-min.js"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/camanFiltering.js') }}"></script>
+<script type="text/javascript">
+  Caman.DEBUG = true
+</script>
+{% endblock content %}

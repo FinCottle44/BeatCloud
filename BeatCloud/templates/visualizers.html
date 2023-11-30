@@ -1,0 +1,304 @@
+{% extends "layout.html"%}
+{% set active_page = "visualizers" %}
+{% block content %}
+<script>
+  const intervals = {}; // Intervals for polling progress of videos labelled "Processing"
+</script>
+<h1>My Visualizers</h1>
+<div class="row">
+  <div class="col">
+    <p class="lead">Showing all visualizers</p>
+  </div>
+  <div class="col">
+    <div class="row float-end">
+      <div class="align-self-center col-auto">
+        <label>Sort by:</label>
+      </div>
+      <div class="col">
+        <select class="form-select" name="sort_by" id="vis_sort_by">
+          <option value="date_desc">Date (Newest first)</option>
+          <option value="date_asc">Date (Oldest first)</option>
+          <option value="name_asc">Name (Alphabetical)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row align-items-center">
+  <button onclick="delete_selected_confirm()" id="btnDeleteSelected" type="button" class="btn btn-danger mx-auto  visually-hidden animate-in" style="max-width: 20rem;">Delete selected visualizers</button>
+</div>
+<hr> 
+<div class="row">
+  {% if videos|length == 0 %}
+  <div class="row">
+    <p class="lead text-center">No visualizers found!</p>
+  </div>
+  <div class="row">
+    <a class="btn btn-primary text-center mx-auto" href="/create" style="max-width:10rem;">Create one now!</a>
+  </div>
+  {% endif %}
+  {% for v in videos %}
+  <!-- foreach -->
+  <div id="{{v.id}}-col" class="col-xl-4 col-lg-6  d-flex justify-content-center">
+    <div class="card video-card w-100 border-light mb-3 shadow" style="max-width: 30rem;">
+      <div class="card-header">
+        <div class="row align-items-center">
+          <!-- checkbox -->
+          <div class="col-auto d-flex align-items-center">
+            <input class="form-check-input my-0 videocheck" type="checkbox" value="" id="{{v.id}}">
+          </div>
+          <div class="col overflow-hidden">
+            <h4 class="card-title mb-0 text-truncate">{{v.title.capitalize()}}</h4>
+          </div>
+          <div class="col-auto">
+            <!-- Choose status badge colour -->
+            <!-- Need this alongside dict to set initial values, but dict good for status updates -->
+            {% if v.visualizer_status == 'Pending' %}
+            {% set status_color = 'purple' %}
+            {% elif v.visualizer_status == 'Pre-Processing' %}
+            {% set status_color = 'info' %}
+            {% elif v.visualizer_status == 'Queued' %}
+            {% set status_color = 'indigo' %}
+            {% elif v.visualizer_status == 'Rendering' %}
+            {% set status_color = 'warning' %}
+            {% elif v.visualizer_status == 'Ready'  %}
+            {% set status_color = 'secondary' %}
+            {% elif v.visualizer_status == 'Failed'  %}
+            {% set status_color = 'danger' %}
+            {% elif v.visualizer_status == 'Upload Failed'  %}
+            {% set status_color = 'danger' %}
+            {% elif v.visualizer_status == 'Uploading'  %}
+            {% set status_color = 'primary' %}
+            {% elif v.visualizer_status == 'Uploaded'  %}
+            {% set status_color = 'success' %}
+            {% endif %}
+            <span id="{{v.id}}-status" class="badge rounded-pill bg-{{status_color}} fw-light" style="float:right;">{{v.visualizer_status}}</span>
+          </div>
+          <!-- Spinner -->
+          {% if v.visualizer_status in ['Queued', 'Rendering', 'Pre-Processing', 'Pending', 'Uploading'] %}
+          <div class="col-auto p-0">
+            <span id="{{v.id}}-spinner" class="my-auto spinner-border text-{{status_color}}" role="status" style="width: 15px; height: 15px; float: right;"></span>
+          </div>
+          <script>
+            $(document).ready(function() {
+              // poll status route
+              poll_status("{{v.id}}", "{{v.title}}");
+                  
+              // Start polling this video every 5 seconds
+              intervals["{{v.id}}"] = setInterval(function() {
+                poll_status("{{v.id}}", "{{v.title}}");
+              }, 5000);
+            });
+          </script>
+          {% endif %}
+
+          <!-- Trash can -->
+          <div class="col-auto">
+            <i onclick="trashcan('{{v.id}}', '{{v.title.capitalize()}}', '{{user.id}}')" data-toggle="modal" data-target="#delete_video_modal" class="bi bi-trash delete_vid" style="float:right;cursor:pointer;font-size: 18px;"></i>
+          </div>
+        </div>
+      </div>
+      <div id="{{v.id}}-body" class="card-body text-center">
+        <div class="overlay-icon" style="top:45%">
+          <div id="{{v.id}}-thumb-spinner" class="animate-in visually-hidden spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+        </div>
+        <img id="{{v.id}}-thumb" src="/visualizers/{{v.id}}/thumb" alt="" class="w-100 my-2 rounded-3">
+        <p id="{{v.id}}-date" class="video-date">{{v.created}}</p>
+      </div>
+      <div class="card-footer text-center py-2">
+        {% if v.visualizer_status == 'Ready' or v.visualizer_status == 'Uploaded' or v.visualizer_status == 'Upload Failed' or v.visualizer_status == 'Uploading' %}
+          <a id="{{v.id}}-btn" href="/visualizers/{{v.id}}" class="btn btn-outline-primary py-2btn-main mx-auto">View video</a>
+        {% else %}
+          <a id="{{v.id}}-btn" href="" class="btn disabled btn-outline-primary py-2 btn-main mx-auto">View video</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<div class="modal fade" id="delete_video_modal">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm delete video</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+        <p class="lead">Are you sure you want to delete video <strong id="deleting_video_name"></strong>?</p>
+        <img id="deleting_video_thumb" src="" alt="" class="w-75 my-2">
+        <p><small>Note: This only deletes the video from <strong>BeatCloud</strong>, and cannot be undone.</small></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger w-100" onclick="" id="delete_btn">Delete</button>
+        <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="delete_selected_modal">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm deletion of selected visualizers</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+        <p>Are you sure you want to delete the selected visualizers?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" onclick="delete_selected({{user.id}})" id="delete_btn">Delete</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/moment.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/moment-timezone.min.js') }}"></script>
+<script>
+
+  $(document).ready(function() {
+    $(".delete_vid").on("click", function() {
+       $('#delete_video_modal').modal('show');
+    });
+
+    //Video delete check changes
+    delete_ids = [];
+    $('.videocheck').change(function(){
+      if(this.checked){
+        if(!delete_ids.includes(this.id)){
+          delete_ids.push(this.id);
+          console.log(delete_ids);
+        }
+      }
+      else{
+        if(delete_ids.includes(this.id)){
+          i = delete_ids.indexOf(this.id);
+          delete_ids.splice(i, 1);
+          console.log(delete_ids);
+        }
+      }
+      if(delete_ids.length > 0){
+        $('#btnDeleteSelected').removeClass('visually-hidden');
+      }
+      else{
+        $('#btnDeleteSelected').addClass('visually-hidden');
+      }
+    })
+  });
+
+  function trashcan(id, name, user_id){
+    document.getElementById('deleting_video_name').innerHTML = name;
+    document.getElementById('deleting_video_thumb').src = `/visualizers/${id}/thumb`;
+    document.getElementById('delete_btn').onclick = function() {delete_video(id, user_id);};
+  }
+
+  function delete_video(id){
+    //send delete video request
+    var xhr = new XMLHttpRequest();
+    url = `/visualizers/${id}`;
+    $.ajax(url, {
+      type: 'DELETE',
+      success: function(data, textStatus){
+        console.log(`Successfully deleted video ${id}`)
+        // nice css spinner turning into checkmark
+
+        // remove column with transition
+        document.getElementById(`${id}-col`).children[0].classList.add('animate-delete')
+        setTimeout(() => { document.getElementById(`${id}-col`).remove(); }, 1000);
+        
+        // close modal
+        $('#delete_video_modal').modal('hide');
+      }
+    })
+  }
+
+  function delete_selected_confirm(){
+    $('#delete_selected_modal').modal('show');
+  }
+
+  function delete_selected(user_id){
+    delete_ids.forEach(id => {
+      delete_video(id);
+    });
+    $('#delete_selected_modal').modal('hide');
+  }
+
+  // Parses epoch time based on client's location
+  $(document).ready(function (){
+    $(".video-date").each(function(){
+      epoch = parseFloat(this.innerHTML);
+      this.innerHTML = `Created at ${get_date(epoch)}`;
+    })
+  })
+
+  function get_date(epochTime){
+    // Parse timestamp to Moment object
+    const momentObj = moment.unix(epochTime); 
+
+    // Get browser timezone offset
+    const timezone = moment.tz.guess();
+
+    // Convert Moment to browser timezone  
+    momentObj.tz(timezone); 
+
+    // Format to local time
+    const formatted = momentObj.format('HH:mm on DD-MM-YY');
+    
+    return formatted
+  }
+
+  function poll_status(id, name){
+    $.ajax({
+      url: `/visualizers/${id}/status`,
+      type: "GET",
+      success: function(data) {
+        console.log(`Video ${id} status: ${data}`);
+        status_color = status_styles[data];
+        
+        // Replace badge
+        badge = `<span id="${id}-status" class="badge rounded-pill bg-${status_color} fw-light" style="float:right;">${data}</span>`
+        $(`#${id}-status`).replaceWith(badge);
+        
+        // Replace spinner
+        if (['Queued', 'Rendering', 'Pre-Processing', 'Pending', 'Uploading'].includes(data)){
+          spinner = `<span id="${id}-spinner" class="my-auto spinner-border text-${status_color}" role="status" style="width: 15px; height: 15px; float: right;"></span>`
+          $(`#${id}-spinner`).replaceWith(spinner);
+        }
+        else {
+          // Ready or uploaded or failed
+          clearInterval(intervals[id]); // Stop polling
+          $(`#${id}-spinner`).hide(); // hide spinner
+          // fetch thumb 1 seconds after 'ready' - should work straight away but just incase
+          if (data == "Ready"){
+            $(`#${id}-thumb-spinner`).removeClass("visually-hidden");
+            setTimeout(function(){
+              $(`#${id}-thumb`).attr('src', add_dummy(`/visualizers/${id}/thumb`));
+              $(`#${id}-thumb-spinner`).addClass("visually-hidden");
+            }, 1000); 
+
+            // set attributes
+            $(`#${id}-btn`).removeAttr('disabled');
+            $(`#${id}-btn`).removeClass('disabled');
+            $(`#${id}-btn`).attr('href', `/visualizers/${id}`);
+          }
+        }
+      },
+      error: function(data) {
+        showAlert('danger', `Could not get status of video <strong>'${name}'</strong>: ${data.responseText}`, false);
+        clearInterval(intervals[id]); // Stop on error
+      }
+      
+    })
+  }
+
+  // 'Sort By' Dropdown refresh
+  $("#vis_sort_by").change(function() {
+        window.location.href = "/visualizers?sort_by=" + $(this).val();
+  });
+</script>
+{%endblock content %}
