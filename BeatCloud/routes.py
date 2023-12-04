@@ -40,36 +40,6 @@ atexit.register(lambda: SS_api_client.close())
 CREATOMATE_URL = 'https://api.creatomate.com/v1/renders'
 CREATOMATE_API_KEY = os.environ.get('CREATOMATE_API_KEY')
 
-#remove in production
-@app.route("/dev")
-def dev():
-    userinfo = {
-        'id':'1',
-        'name':"dev",
-        'email':"dev@usebeatcloud.com",
-        'picture':"https://envri.eu/wp-content/uploads/2016/08/software-developer-copy.jpg"
-    }
-
-    # Instantiate for flask-login
-    user = User(**userinfo)
-
-    # Doesn't exist? Add it to the database.
-    if not beatcloud_db.get_user(userinfo["id"]):
-        beatcloud_db.add_user(**userinfo)
-    else:
-        # Else, clear previous media folders if empty
-        vid_dir = os.path.join(app.config['UPLOAD_FOLDER'], userinfo["id"], "videos")
-        if not os.path.exists(vid_dir):
-            print("No directory for returning user found")
-        else:
-            for dirpath, dirnames, filenames in os.walk(vid_dir, topdown=False):
-                if not dirnames and not filenames: #if empty
-                    os.rmdir(dirpath) #remove empty vid directories.
-
-    # Begin session by logging the user in
-    login_user(user)
-    return redirect("/")
-
 @app.route("/")
 def home():
     # landing page
@@ -96,9 +66,6 @@ def create():
     fonts=get_user_fonts(current_user.id)
     layers=get_user_layers(current_user.id)
 
-    print(current_user)
-    print(current_user.locked)
-    print(f"CURRENT USER LOCKED",current_user.locked)
     return render_template('create.html', title="Create", form=create_form, v_id=v_id, fonts=fonts, user=current_user, layers=layers)
 
 # USER FONTS
@@ -362,6 +329,7 @@ def check_status(v_id):
             if converted_status=='Ready':
                 try:
                     s3.head_object(Bucket=app.config['S3_BUCKET'], Key=v_key)
+                    beatcloud_db.increment_user_video_usage(current_user.id, 1) # Increment value by 1
                 except botocore.exceptions.ClientError as e:
                     if e.response["Error"]["Code"] == "404":
                         print(f"Video ready but not yet in S3... Returning rendering still.")
@@ -422,6 +390,7 @@ def account():
         time_delta = epoch - now
         limit_reset_countdown = floor(time_delta / (60 * 60 * 24)) 
     elif current_user.tier == "free":
+        # Limits reset on first day of every month. Think this should work fine with changing plans but neeeds testing
         today = datetime.today()
         current_month = today.month
         current_year = today.year
@@ -430,6 +399,11 @@ def account():
         
     # for unlimited there is no limit so no countdown
     return render_template("account.html", user=current_user, title="Account", user_templates=user_templates, user_presets=user_presets, user_tier_config=tier_config, asset_usage=asset_usage, preset_usage=preset_usage, limit_reset_countdown=limit_reset_countdown)
+
+# @app.route('/sub_renew') # stripe webhook for resetting plus user limits
+# def method_name():
+#     pass
+
 
 @app.route("/login/", methods=["POST", "GET"])
 def login():
@@ -460,6 +434,44 @@ def change_plan():
     else:
         # pricing table
         return render_template('pricing.html', title="Plans", user=current_user)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    event = None
+    payload = request.data
+
+    try:
+        event = json.loads(payload)
+    except json.decoder.JSONDecodeError as e:
+        print('⚠️  Webhook error while parsing basic request.' + str(e))
+        return jsonify(success=False)
+    if endpoint_secret:
+        # Only verify the event if there is an endpoint secret defined
+        # Otherwise use the basic event deserialized with json
+        sig_header = request.headers.get('stripe-signature')
+        try:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, endpoint_secret
+            )
+        except stripe.error.SignatureVerificationError as e:
+            print('⚠️  Webhook signature verification failed.' + str(e))
+            return jsonify(success=False)
+
+    # Handle the event
+    if event and event['type'] == 'payment_intent.succeeded':
+        payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
+        print('Payment for {} succeeded'.format(payment_intent['amount']))
+        # Then define and call a method to handle the successful payment intent.
+        # handle_payment_intent_succeeded(payment_intent)
+    elif event['type'] == 'payment_method.attached':
+        payment_method = event['data']['object']  # contains a stripe.PaymentMethod
+        # Then define and call a method to handle the successful attachment of a PaymentMethod.
+        # handle_payment_method_attached(payment_method)
+    else:
+        # Unexpected event type
+        print('Unhandled event type {}'.format(event['type']))
+
+    return jsonify(success=True)
 
 ## ROUTE TO CHECKOUT
 # get price ID from user selection
@@ -669,7 +681,6 @@ def delete_visualizer(v_id):
         #remove directories
         video_dir = os.path.join(app.config['UPLOAD_FOLDER'], vid['PK'].split('#')[1], 'videos', v_id)
         if os.path.exists(video_dir):
-            print("valid path deleting vid dir: " + video_dir)
             shutil.rmtree(video_dir)
         temp_dir = os.path.join(app.config["TEMP_FOLDER"], v_id)
         if os.path.exists(temp_dir):

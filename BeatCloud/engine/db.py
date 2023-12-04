@@ -163,6 +163,54 @@ class BC_Table:
             print(f"Couldn't get asset count for User {user_id}: {e}")
             return e
 
+    def get_user_video_usage(self, user_id):
+        try:
+            response = self.table.get_item(
+                Key={
+                    'PK': f'USER#{user_id}',
+                    'SK': f'METADATA#{user_id}'
+                },
+                ProjectionExpression='monthly_video_count'
+            )
+            return response.get('Item')['monthly_video_count']
+        except ClientError as e:
+            print(f"Couldn't get video count for User {user_id}: {e}")
+            return e
+        
+    def increment_user_video_usage(self, user_id, value):
+        try:
+            response = self.table.update_item(
+                Key={
+                    'PK': f'USER#{user_id}',
+                    'SK': f'METADATA#{user_id}' 
+                },
+                UpdateExpression="SET monthly_video_count = monthly_video_count + :val",
+                ExpressionAttributeValues={
+                    ':val': value
+                },
+                ReturnValues="UPDATED_NEW"
+            )
+        except ClientError as e:
+            print(f"Couldn't get asset count for User {user_id}: {e}")
+            return e
+    
+    def set_user_video_usage(self, user_id, value): # Used for resetting to 0
+        try:
+            response = self.table.update_item(
+                Key={
+                    'PK': f'USER#{user_id}',
+                    'SK': f'METADATA#{user_id}' 
+                },
+                UpdateExpression="SET monthly_video_count = :val",
+                ExpressionAttributeValues={
+                    ':val': value
+                },
+                ReturnValues="UPDATED_NEW"
+            )
+        except ClientError as e:
+            print(f"Couldn't get asset count for User {user_id}: {e}")
+            return e
+
     ### Visualizers
     def get_visualizer(self, user_id, visualizer_id):
         try:

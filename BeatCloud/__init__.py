@@ -1,6 +1,7 @@
 import os, boto3, stripe
 from flask import Flask
 from flask_login import LoginManager, UserMixin
+from flask_crontab import Crontab
 from oauthlib.oauth2 import WebApplicationClient
 
 ### Stripe Setup
@@ -114,6 +115,14 @@ if not exists:
     beatcloud_db.create_table(table_name)
     print(f"\nCreated table {beatcloud_db.table.name}.")
 
+#### Crontab setup & jobs
+crontab = Crontab(app)
+@crontab.job() # todo every day
+def reset_free_limits():
+    # search for users that billing date expired yesterday
+    # we set the user expiry date in db
+    pass
+
 #####
 # Flask-Login helper to retrieve a user from our db
 @login_manager.user_loader
@@ -153,21 +162,20 @@ class User(UserMixin):
 
     def get_tier(self, cust_id):
         sub = stripe.Subscription.list(customer=cust_id)
-        if not sub:
-            # free user
-            return 'free'
-        else:
+        if sub:
             for s in sub.data: # may have multiple (old etc)
                 sub_status = s.status
                 if sub_status not in ['active', 'trialing']:
                     print("Inactive subscription")
                 else:
                     self.subscription_end_epoch = s.current_period_end
-                    print(F"CURRENT USER SUBSCRIPOTION EP[OCH END TIME]::::: { s.current_period_end}")
-                    print(F"CURRENT USER SUBSCRIPOTION EP[OCH END TIME]:::: SELF {self.subscription_end_epoch}")
                     prod_id = s.plan.product
                     prod = stripe.Product.retrieve(prod_id)
                     return prod.metadata.tier
+        
+            # free user
+            return 'free'
+        else:
     
 ####
 #  Imports
