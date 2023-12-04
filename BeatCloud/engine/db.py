@@ -65,7 +65,7 @@ class BC_Table:
             print(f"Couldn't get user {id}. {e}")
         return None
     
-    def add_user(self, id, name, email, picture, stripe_id):
+    def add_user(self, id, name, email, picture, stripe_id, user_billing_reset):
         try:
             self.table.put_item(
                 Item={
@@ -76,7 +76,9 @@ class BC_Table:
                 'picture': picture,
                 'stripe_id': stripe_id,
                 'asset_count':0,
-                'preset_count':0
+                'preset_count':0,
+                'monthly_video_count':0,
+                'billing_reset_timestamp':user_billing_reset
                 }
             )
         except ClientError as e:
@@ -208,7 +210,24 @@ class BC_Table:
                 ReturnValues="UPDATED_NEW"
             )
         except ClientError as e:
-            print(f"Couldn't get asset count for User {user_id}: {e}")
+            print(f"Couldn't set video usage for User {user_id}: {e}")
+            return e
+    
+    def set_user_billing_reset(self, user_id, value): # Used for resetting to 0
+        try:
+            response = self.table.update_item(
+                Key={
+                    'PK': f'USER#{user_id}',
+                    'SK': f'METADATA#{user_id}' 
+                },
+                UpdateExpression="SET billing_reset_timestamp = :val",
+                ExpressionAttributeValues={
+                    ':val': value
+                },
+                ReturnValues="UPDATED_NEW"
+            )
+        except ClientError as e:
+            print(f"Couldn't set billing reset for User {user_id}: {e}")
             return e
 
     ### Visualizers

@@ -1,5 +1,5 @@
 from calendar import monthrange
-from datetime import datetime
+from datetime import datetime, timedelta
 from math import floor
 from flask import render_template, url_for, request, redirect, flash, send_from_directory, Response, jsonify, session, json, abort
 from flask_login import current_user, login_required, login_user, logout_user
@@ -378,32 +378,21 @@ def assets():
 def account():
     user_templates = beatcloud_db.get_all_templates(current_user.id)
     user_presets = beatcloud_db.get_all_presets(current_user.id)
-    asset_usage = beatcloud_db.get_user_asset_usage(current_user.id)
-    preset_usage = beatcloud_db.get_user_preset_usage(current_user.id)
+    # GET USER ONCE NOT ALL THOSE THINGS 
+    usage = beatcloud_db.get_user(current_user.id)
+    asset_usage = usage["asset_count"]
+    video_usage = usage["monthly_video_count"]
+    preset_usage = usage["preset_count"]
     tier_config = app.config['TIERS'][current_user.tier] # Defines limits etc.  
 
-    # Compute time until monthly limits reset:
-    limit_reset_countdown = -1
-    if current_user.tier == "plus":
-        epoch = current_user.subscription_end_epoch
-        now = datetime.now().timestamp()
-        time_delta = epoch - now
-        limit_reset_countdown = floor(time_delta / (60 * 60 * 24)) 
-    elif current_user.tier == "free":
-        # Limits reset on first day of every month. Think this should work fine with changing plans but neeeds testing
-        today = datetime.today()
-        current_month = today.month
-        current_year = today.year
-        num_days_in_month = monthrange(current_year, current_month)[1]
-        limit_reset_countdown = num_days_in_month - today.day
+    # Time until usage reset
+    user_reset_timestamp = current_user.user_billing_reset
+    now = datetime.now().timestamp()
+    time_delta = float(user_reset_timestamp) - now
+    limit_reset_countdown = floor(time_delta / (60 * 60 * 24)) 
         
     # for unlimited there is no limit so no countdown
-    return render_template("account.html", user=current_user, title="Account", user_templates=user_templates, user_presets=user_presets, user_tier_config=tier_config, asset_usage=asset_usage, preset_usage=preset_usage, limit_reset_countdown=limit_reset_countdown)
-
-# @app.route('/sub_renew') # stripe webhook for resetting plus user limits
-# def method_name():
-#     pass
-
+    return render_template("account.html", user=current_user, title="Account", user_templates=user_templates, user_presets=user_presets, user_tier_config=tier_config, asset_usage=asset_usage, video_usage=video_usage, preset_usage=preset_usage, limit_reset_countdown=limit_reset_countdown)
 
 @app.route("/login/", methods=["POST", "GET"])
 def login():
@@ -435,43 +424,43 @@ def change_plan():
         # pricing table
         return render_template('pricing.html', title="Plans", user=current_user)
 
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    event = None
-    payload = request.data
+# @app.route('/webhook', methods=['POST'])
+# def webhook():
+#     event = None
+#     payload = request.data
 
-    try:
-        event = json.loads(payload)
-    except json.decoder.JSONDecodeError as e:
-        print('⚠️  Webhook error while parsing basic request.' + str(e))
-        return jsonify(success=False)
-    if endpoint_secret:
-        # Only verify the event if there is an endpoint secret defined
-        # Otherwise use the basic event deserialized with json
-        sig_header = request.headers.get('stripe-signature')
-        try:
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, endpoint_secret
-            )
-        except stripe.error.SignatureVerificationError as e:
-            print('⚠️  Webhook signature verification failed.' + str(e))
-            return jsonify(success=False)
+#     try:
+#         event = json.loads(payload)
+#     except json.decoder.JSONDecodeError as e:
+#         print('⚠️  Webhook error while parsing basic request.' + str(e))
+#         return jsonify(success=False)
+#     if endpoint_secret:
+#         # Only verify the event if there is an endpoint secret defined
+#         # Otherwise use the basic event deserialized with json
+#         sig_header = request.headers.get('stripe-signature')
+#         try:
+#             event = stripe.Webhook.construct_event(
+#                 payload, sig_header, endpoint_secret
+#             )
+#         except stripe.error.SignatureVerificationError as e:
+#             print('⚠️  Webhook signature verification failed.' + str(e))
+#             return jsonify(success=False)
 
-    # Handle the event
-    if event and event['type'] == 'payment_intent.succeeded':
-        payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
-        print('Payment for {} succeeded'.format(payment_intent['amount']))
-        # Then define and call a method to handle the successful payment intent.
-        # handle_payment_intent_succeeded(payment_intent)
-    elif event['type'] == 'payment_method.attached':
-        payment_method = event['data']['object']  # contains a stripe.PaymentMethod
-        # Then define and call a method to handle the successful attachment of a PaymentMethod.
-        # handle_payment_method_attached(payment_method)
-    else:
-        # Unexpected event type
-        print('Unhandled event type {}'.format(event['type']))
+#     # Handle the event
+#     if event and event['type'] == 'payment_intent.succeeded':
+#         payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
+#         print('Payment for {} succeeded'.format(payment_intent['amount']))
+#         # Then define and call a method to handle the successful payment intent.
+#         # handle_payment_intent_succeeded(payment_intent)
+#     elif event['type'] == 'payment_method.attached':
+#         payment_method = event['data']['object']  # contains a stripe.PaymentMethod
+#         # Then define and call a method to handle the successful attachment of a PaymentMethod.
+#         # handle_payment_method_attached(payment_method)
+#     else:
+#         # Unexpected event type
+#         print('Unhandled event type {}'.format(event['type']))
 
-    return jsonify(success=True)
+#     return jsonify(success=True)
 
 ## ROUTE TO CHECKOUT
 # get price ID from user selection
@@ -1203,7 +1192,9 @@ def callback():
         )
 
         # Add user
-        beatcloud_db.add_user(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust.id) 
+        # user_billing_reset = int((datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=30)).timestamp()) # Midnight 30 days from now
+        user_billing_reset = int((datetime.now() + timedelta(minutes=2)).timestamp()) # debug 2 min 
+        beatcloud_db.add_user(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust.id, user_billing_reset) 
 
         # Stripe ID for tier updates
         cust_id =  cust.id
@@ -1212,15 +1203,15 @@ def callback():
         # create_user_dirs(userinfo["id"]) # not sure if need??
     else:
         cust_id = db_user["stripe_id"]
+        user_billing_reset = db_user["billing_reset_timestamp"]
 
     # Create User obj
-    user = User(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust_id)
+    user = User(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust_id, user_billing_reset)
 
     # Begin session by logging the user in
     login_user(user)
 
     # Send user back to homepage
-    print("User logged in sending them to home")
     return redirect(url_for("home", _external=True))
    
 
