@@ -69,7 +69,11 @@
       </div>
       <div class="row">
         <div class="col text-center">
-          <a class="btn btn-primary" href="/changeplan">Manage my subscription <i class="bi bi-arrow-up-right"></i></a>
+          {% if user.tier == 'free' %}
+            <a class="btn btn-primary" href="/pricing">Upgrade <i class="bi bi-arrow-up-right"></i></a>
+          {% else %}
+            <a class="btn btn-primary" href="/create-portal-session">Manage my subscription <i class="bi bi-arrow-up-right"></i></a>
+          {% endif %}
           <!-- https://stripe.com/docs/customer-management/integrate-customer-portal -->
 
         </div>

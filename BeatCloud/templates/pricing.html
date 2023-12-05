@@ -1,34 +1,159 @@
 {% extends "layout.html"%}
+{% set active_page = "pricing" %}
 {% block content %}
 <script>
-  document.addEventListener('stripe:ready', function(){
-    console.log('Stripe pricing table loaded!');
+  const plus_monthly_whole = '{{plus_monthly_price[0]}}';
+  const plus_monthly_fraction = '{{plus_monthly_price[1]}}';
+  const unlim_monthly_whole = '{{unlim_monthly_price[0]}}';
+  const unlim_monthly_fraction = '{{unlim_monthly_price[1]}}';
+  const plus_annually_whole = '{{plus_monthly_price[0]}}';
+  const plus_annually_fraction = '{{plus_monthly_price[1]}}';
+  const unlim_annually_whole = '{{unlim_monthly_price[0]}}';
+  const unlim_annually_fraction = '{{unlim_monthly_price[1]}}';
+  const currency = "$"; // define using jinja
+
+  $(document).ready(function () {
+    $('#plus_price_whole').text(currency + plus_monthly_whole);
+    $('#plus_price_fraction').text('.' + plus_monthly_fraction);
+    $('#unlim_price_whole').text(currency + unlim_monthly_whole);
+    $('#unlim_price_fraction').text('.' + unlim_monthly_fraction);
+    console.log("Loaded!")
+
+    $('#chk_billing_plan').change(function () {
+      console.log("switched");
+      console.log(this.checked);
+      if (this.checked) {
+        // annual
+        // $('#plus_price_whole').text(currency + plus_monthly_whole);
+        // $('#plus_price_fraction').text('.' + plus_monthly_fraction);
+        // $('#unlim_price_whole').text(currency + unlim_monthly_whole);
+        // $('#unlim_price_fraction').text('.' + unlim_monthly_fraction);
+        $('#plus_bill_frequency').text('per year');
+        $('#unlim_bill_frequency').text('per year');
+      } else {
+        // monthly
+        $('#plus_price_whole').text(currency + plus_monthly_whole);
+        $('#plus_price_fraction').text('.' + plus_monthly_fraction);
+        $('#unlim_price_whole').text(currency + unlim_monthly_whole);
+        $('#unlim_price_fraction').text('.' + unlim_monthly_fraction);
+        $('#plus_bill_frequency').text('per month');
+        $('#unlim_bill_frequency').text('per month');
+      }
+    });
   });
 </script>
 <div class="my-3 mx-auto" style="width:80%; border-radius: 10px;">
   <div class="container">
-    <h1 class="text-center mb-0">Pricing Guide</h1>
-    <p class="lead small text-center mb-3" style="">BeatCloud is free to use forever.</p>
+    <h1 class="text-center mb-0">Plans for Any Producer</h1>
+    <p class="lead small text-center my-3" style="">Upgrade anytime. Each plan comes with a 7 day free trial.</p>
     <hr class="w-25 mx-auto">
-    <!-- cards -->
-    <div class="row justify-content-center rounded-4">
-      <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
-        <stripe-pricing-table 
-          pricing-table-id="prctbl_1OHVo9EKAQC0b3cDinq6unIW"
-          publishable-key="pk_test_51NzdW3EKAQC0b3cDpWX6n5RhNzjsmX1mj9Svte8OmgnJaFwtSXe04AHw28LemHMI54IXRolvzYJWmROxbdzUyQu500EMZ4AXC8"
-          customer-email="{{user.email}}"
-        >
-      </stripe-pricing-table>
+    <div class="row mb-3 text-center">
+      <div class="col text-end">
+        <span class="align-middle">Monthly</span>
+      </div>
+      <div class="col-auto">
+        <div class="form-check form-switch">
+          <input class="float-none form-check-input" type="checkbox" id="chk_billing_plan">
+        </div>
+      </div>
+      <div class="col text-start">
+        <span class="align-middle">Annually  <span style="font-size:small;" class="mx-2 align-middle badge rounded-pill bg-success fw-light">2 months free!</span></span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-lg-4 align-self-center mb-3">
+        <div class="card border-0 shadow mx-auto">
+          <div class="card-header">
+            <h4 class="mb-0">Free</h4>
+          </div>
+          <div class="card-body">
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item">{{tiers['free']['monthly_vid_limit']}} Videos per month</li>
+              <li class="list-group-item">{{tiers['free']['asset_limit']}} Custom Asset</li>
+              <li class="list-group-item">{{tiers['free']['preset_limit']}} Preset or Template</li>
+              <li class="list-group-item">{{tiers['free']['max_res']}}p resolution</li>
+              <li class="list-group-item">Videos stored for {{tiers['free']['storage_hours']}} hours</li>
+            </ul>
+          </div>
+          <div class="card-footer text-center">
+            <!-- if user hasnt started trial before -->
+            <a href="" class="btn btn-outline-primary disabled">Current plan</a> 
+            <!-- else subscribe -->
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4 align-self-center mb-3">
+        <div class="card border-0 shadow mx-auto grow">
+          <div class="card-header">
+            <h4 class="mb-0">Plus  <span style="font-size:small; float:right;" class="align-middle badge rounded-pill bg-primary fw-light">Most popular</span></h4>
+          </div>
+          <div class="card-body">
+            <div class="row align-items-baseline">
+              <div class="col text-end text-primary">
+                <span id="plus_price_whole" style="font-size:xxx-large;"></span><span id="plus_price_fraction" style="font-size:xx-large;"></span>
+              </div>
+              <div class="col">
+                <span id="plus_bill_frequency">per month</span>
+              </div>
+            </div>
+            <hr class="mx-auto w-25">
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item"><span style="font-size: 20px" class="text-primary">{{tiers['plus']['monthly_vid_limit']}}</span> Videos per month</li>
+              <li class="list-group-item"><span style="font-size: 20px" class="text-primary">{{tiers['plus']['asset_limit']}}</span> Custom Assets</li>
+              <li class="list-group-item"><span style="font-size: 20px" class="text-primary">{{tiers['plus']['preset_limit']}}</span> Presets or Templates</li>
+              <li class="list-group-item"><span style="font-size: 20px" class="text-primary">{{tiers['plus']['max_res']}}</span>p resolution</li>
+              <li class="list-group-item">Videos stored for <span style="font-size: 20px" class="text-primary">{{tiers['plus']['storage_hours']}}</span> hours</li>
+            </ul>
+          </div>
+          <div class="card-footer text-center">
+            <!-- if user hasnt started trial before -->
+            <a href="" class="btn btn-primary px-3 py-2">Start trial  <i class="bi bi-arrow-up-right"></i></a> 
+            <!-- else subscribe -->
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4 align-self-center mb-3">
+        <div class="card border-0 shadow grow">
+          <div class="card-header">
+            <h4 class="mb-0">Unlimited</h4>
+          </div>
+          <div class="card-body">
+            <div class="row align-items-baseline">
+              <div class="col text-end text-primary">
+                <span id="unlim_price_whole" style="font-size:xxx-large;"></span><span id="unlim_price_fraction" style="font-size:xx-large;"></span>
+              </div>
+              <div class="col">
+                <span id="unlim_bill_frequency">per month</span>
+              </div>
+            </div>
+            <hr class="mx-auto w-25">
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item"><span style="font-size: 24px" class="text-primary"><i class="bi bi-infinity"></i> </span>  Videos per month</li>
+              <li class="list-group-item"><span style="font-size: 24px" class="text-primary"><i class="bi bi-infinity"></i> </span>  Custom Assets</li>
+              <li class="list-group-item"><span style="font-size: 24px" class="text-primary"><i class="bi bi-infinity"></i> </span>  Presets or Templates</li>
+              <li class="list-group-item"><span style="font-size: 24px" class="text-primary">{{tiers['unlimited']['max_res']}}</span>p resolution</li>
+              <li class="list-group-item">Videos stored for <span style="font-size: 24px" class="text-primary">{{tiers['unlimited']['storage_hours']}}</span> hours</li>
+            </ul>
+          </div>
+          <div class="card-footer text-center">
+            <!-- if user hasnt started trial before -->
+            <form action="/create-checkout-session" method="POST">
+              <input type="hidden" name="lookup_key" value="{{PRICE_LOOKUP_KEY}}" />
+              <button type="submit" class="btn btn-outline-primary px-3 py-2">Start trial  <i class="bi bi-arrow-up-right"></i></button> 
+            </form>
+            <!-- else subscribe -->
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-  <hr class="w-25 mx-auto">
   <div class="row d-flex flex-wrap align-items-center">
-    <div class="col-6 mt-2">
+    <div class="col-6 mt-2 text-center">
       <div style="display:inline-block;" class="">
         <img width=200px src="{{url_for('static', filename='img/LARGE-punchline-inline-dark.png') }}" alt="" class="float-right">
       </div>
     </div>
-    <div class="col-6 mt-2">
+    <div class="col-6 mt-2 text-center">
       <img width=250px class="mx-auto float-left" src="{{url_for('static', filename='img/developed-with-youtube-sentence-case-dark.png')}}" alt="">
     </div>
   </div>

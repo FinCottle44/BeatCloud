@@ -405,24 +405,123 @@ def login():
 ######################################################
 ## STRIPE ROUTES
 ######################################################
-@app.route('/portal', methods=["GET"])
+@app.route('/pricing', methods=['GET'])
 @login_required
-def create_stripe_portal():
-    stripe_id = current_user.stripe_id
-    portal = stripe.billing_portal.Session.create(
-        customer=stripe_id,
-        return_url="https://app.usebeatcloud.com/account", # the return URL
-    )
-    return redirect(portal['url'])
+def checkout():
+    currency = 'usd'
+    PLUS_LOOKUP_KEY=f'bc-plus-{currency}'
+    UNLIM_LOOKUP_KEY=f'bc-unlim-{currency}'
+    plus_monthly = stripe.Price.list(lookup_keys=[PLUS_LOOKUP_KEY])
+    plus_monthly_price = str(plus_monthly['data'][0]['unit_amount']/100).split(".")
+    unlim_monthly = stripe.Price.list(lookup_keys=[UNLIM_LOOKUP_KEY])
+    unlim_monthly_price = str(unlim_monthly['data'][0]['unit_amount']/100).split(".")
+    return render_template('pricing.html', title="Pricing", plus_monthly=plus_monthly, plus_monthly_price=plus_monthly_price, unlim_monthly=unlim_monthly, unlim_monthly_price=unlim_monthly_price, user=current_user, tiers=app.config['TIERS'])
 
-@app.route('/changeplan', methods=["GET"])
+@app.route('/create-checkout-session', methods=['POST'])
 @login_required
-def change_plan():
-    if current_user.tier != "free": # User already subscribed and can change plan in customer portal
-        return redirect(url_for('create_stripe_portal'))
+def create_checkout_session():
+    try:
+        prices = stripe.Price.list(
+            lookup_keys=[request.form['lookup_key']],
+            expand=['data.product']
+        )
+
+        checkout_session = stripe.checkout.Session.create(
+            line_items=[
+                {
+                    'price': prices.data[0].id,
+                    'quantity': 1,
+                },
+            ],
+            customer=current_user.stripe_id,
+            mode='subscription',
+            success_url='https://usebeatcloud.com' +
+            '/success.html?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url='https://usebeatcloud.com' + '/cancel.html',
+            subscription_data={
+                'trial_period_days': 7
+            },
+        )
+        return redirect(checkout_session.url, code=303)
+    except Exception as e:
+        print(e)
+        return "Server error", 500
+
+@app.route('/create-portal-session', methods=['GET'])
+@login_required
+def customer_portal():
+    # This is the URL to which the customer will be redirected after they are
+    # done managing their billing with the portal.
+    return_url = 'https://app.usebeatcloud.com'
+
+    portalSession = stripe.billing_portal.Session.create(
+        customer=current_user.stripe_id,
+        return_url=return_url,
+    )
+    return redirect(portalSession.url, code=303)
+
+@app.route('/webhook', methods=['POST'])
+def webhook_received():
+    # Replace this endpoint secret with your endpoint's unique secret
+    # If you are testing with the CLI, find the secret by running 'stripe listen'
+    # If you are using an endpoint defined with the API or dashboard, look in your webhook settings
+    # at https://dashboard.stripe.com/webhooks
+    webhook_secret = 'whsec_f7de043651e54e3b4456d565d1f363e110c469ed14ff77130dc721501f22ac5a'
+    request_data = json.loads(request.data)
+
+    if webhook_secret:
+        # Retrieve the event by verifying the signature using the raw body and secret if webhook signing is configured.
+        signature = request.headers.get('stripe-signature')
+        try:
+            event = stripe.Webhook.construct_event(
+                payload=request.data, sig_header=signature, secret=webhook_secret)
+            data = event['data']
+        except Exception as e:
+            return e
+        # Get the type of webhook event sent - used to check the status of PaymentIntents.
+        event_type = event['type']
     else:
-        # pricing table
-        return render_template('pricing.html', title="Plans", user=current_user)
+        data = request_data['data']
+        event_type = request_data['type']
+    data_object = data['object']
+
+    print('event ' + event_type)
+
+    if event_type == 'checkout.session.completed':
+        print('🔔 Payment succeeded!')
+    elif event_type == 'customer.subscription.trial_will_end':
+        # notify user of ending trial
+        print('Subscription trial will end')
+    elif event_type == 'customer.subscription.created':
+        # 
+        print('Subscription created %s', event.id)
+    elif event_type == 'customer.subscription.updated':
+        # update tier & limits
+        print('Subscription created %s', event.id)
+    elif event_type == 'customer.subscription.deleted':
+        #  revoke accesss
+        print('Subscription canceled: %s', event.id)
+
+    return jsonify({'status': 'success'})
+
+# @app.route('/portal', methods=["GET"])
+# @login_required
+# def create_stripe_portal():
+#     stripe_id = current_user.stripe_id
+#     portal = stripe.billing_portal.Session.create(
+#         customer=stripe_id,
+#         return_url="https://app.usebeatcloud.com/account", # the return URL
+#     )
+#     return redirect(portal['url'])
+
+# @app.route('/changeplan', methods=["GET"])
+# @login_required
+# def change_plan():
+#     if current_user.tier != "free": # User already subscribed and can change plan in customer portal
+#         return redirect(url_for('create_stripe_portal'))
+#     else:
+#         # pricing table
+#         return render_template('pricing.html', title="Plans", user=current_user)
 
 # @app.route('/webhook', methods=['POST'])
 # def webhook():
