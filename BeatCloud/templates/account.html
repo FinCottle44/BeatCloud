@@ -33,7 +33,7 @@
           <div class="card border-0 shadow h-100">
             <div class="card-body">
               <h6 class="card-title">Custom Assets:</h6>
-              <span id="user_asset_count" style="font-size:42px;" class="px-2 {{'text-danger' if asset_usage > user_tier_config['asset_limit'] else 'text-primary'}}">{{asset_usage}}</span>
+              <span id="user_asset_count" style="font-size:42px;" class="px-2 {{'text-danger' if asset_usage >= user_tier_config['asset_limit'] else 'text-primary'}}">{{asset_usage}}</span>
               <span class="text-end">/ </span>{{user_tier_config['asset_limit'] if user.tier != 'unlimited' else '<i class="bi bi-infinity"></i>'|safe}}
             </div>
           </div>
@@ -43,7 +43,7 @@
           <div class="card border-0 shadow h-100">
             <div class="card-body">
               <h6 class="card-title">Templates & Presets:</h6>
-              <span id="user_preset_count" style="font-size:42px;" class="px-2 {{'text-danger' if preset_usage > user_tier_config['preset_limit'] else 'text-primary'}}">{{preset_usage}}</span>
+              <span id="user_preset_count" style="font-size:42px;" class="px-2 {{'text-danger' if preset_usage >= user_tier_config['preset_limit'] else 'text-primary'}}">{{preset_usage}}</span>
               <span class="text-end">/ </span>{{user_tier_config['preset_limit'] if user.tier != 'unlimited' else '<i class="bi bi-infinity"></i>'|safe}}
             </div>
           </div>
@@ -54,7 +54,7 @@
               <h6 class="card-title">Videos this month:</h6>
               <div class="row align-items-end">
                 <div class="col-auto">
-                  <span id="user_monthly_video_count" style="font-size:42px;" class="px-2 {{'text-danger' if 0 > user_tier_config['monthly_vid_limit'] else 'text-primary'}}">{{video_usage}}</span>
+                  <span id="user_monthly_video_count" style="font-size:42px;" class="px-2 {{'text-danger' if 0 >= user_tier_config['monthly_vid_limit'] else 'text-primary'}}">{{video_usage}}</span>
                   <span class="text-end">/ </span>{{user_tier_config['monthly_vid_limit'] if user.tier != 'unlimited' else '<i class="bi bi-infinity"></i>'|safe}}
                 </div>
                 {% if user.tier != 'unlimited' %}

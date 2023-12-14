@@ -174,7 +174,8 @@ class Visualizer:
 
         output = Output(
             format = 'mp4',
-            resolution = 'sd', # TODO: Base on user subscription
+            resolution = 'hd', # 'sd' - 1024px x 576px @ 25fps 'hd' - 1280px x 720px @ 25fps '1080' - 1920px x 1080px @ 25fps
+            quality = 'high', # see if improves audio quality
             thumbnail = thumbnail,
             destinations = [self.get_shotstack_destination_info()]
         )

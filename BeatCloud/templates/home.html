@@ -6,7 +6,13 @@
   </div>
 
   <div class="container">
-    <h1 class="text-center mb-0">Hi {{name}}!</h1>
+    <h1 class="text-center mb-0">Hi {{name}}! 
+      {% if current_user.tier == 'plus' %} 
+      <img style="height:6rem;"src="{{url_for('static', filename='img/plus-icon.png')}}">
+      {% elif current_user.tier == 'unlimited' %} 
+      <img style="height:6rem;"src="{{url_for('static', filename='img/unlim-icon.png')}}">
+      {% endif %}
+    </h1>
     <div class="form-group mt-1 mb-4 mx-auto text-center">
       Not you? <a href="/logout" style="width:100%">Logout</a>
     </div>

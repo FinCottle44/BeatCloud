@@ -2,34 +2,38 @@
 {% set active_page = "pricing" %}
 {% block content %}
 <script>
-  const plus_monthly_whole = '{{plus_monthly_price[0]}}';
-  const plus_monthly_fraction = '{{plus_monthly_price[1]}}';
-  const unlim_monthly_whole = '{{unlim_monthly_price[0]}}';
-  const unlim_monthly_fraction = '{{unlim_monthly_price[1]}}';
-  const plus_annually_whole = '{{plus_monthly_price[0]}}';
-  const plus_annually_fraction = '{{plus_monthly_price[1]}}';
-  const unlim_annually_whole = '{{unlim_monthly_price[0]}}';
-  const unlim_annually_fraction = '{{unlim_monthly_price[1]}}';
+  const plus_monthly_whole = '{{prices["plus"]["monthly"][0]}}';
+  const plus_monthly_fraction = '{{prices["plus"]["monthly"][1]}}';
+  const unlim_monthly_whole = '{{prices["unlimited"]["monthly"][0]}}';
+  const unlim_monthly_fraction = '{{prices["unlimited"]["monthly"][1]}}';
+  const plus_annually_whole = '{{prices["plus"]["annually"][0]}}';
+  const plus_annually_fraction = '{{prices["plus"]["annually"][1]}}';
+  const unlim_annually_whole = '{{prices["unlimited"]["annually"][0]}}';
+  const unlim_annually_fraction = '{{prices["unlimited"]["annually"][1]}}';
   const currency = "$"; // define using jinja
+  let plus_lookup_key='{{PLUS_LOOKUP_KEY}}'
+  let unlim_lookup_key='{{UNLIM_LOOKUP_KEY}}'
 
   $(document).ready(function () {
     $('#plus_price_whole').text(currency + plus_monthly_whole);
     $('#plus_price_fraction').text('.' + plus_monthly_fraction);
     $('#unlim_price_whole').text(currency + unlim_monthly_whole);
     $('#unlim_price_fraction').text('.' + unlim_monthly_fraction);
-    console.log("Loaded!")
+    $('#plus_lookup_key').val(plus_lookup_key + '-monthly');
+    $('#unlim_lookup_key').val(unlim_lookup_key + '-monthly');
 
     $('#chk_billing_plan').change(function () {
-      console.log("switched");
-      console.log(this.checked);
       if (this.checked) {
         // annual
-        // $('#plus_price_whole').text(currency + plus_monthly_whole);
-        // $('#plus_price_fraction').text('.' + plus_monthly_fraction);
-        // $('#unlim_price_whole').text(currency + unlim_monthly_whole);
-        // $('#unlim_price_fraction').text('.' + unlim_monthly_fraction);
+        $('#plus_price_whole').text(currency + plus_annually_whole);
+        $('#plus_price_fraction').text('.' + plus_annually_fraction);
+        $('#unlim_price_whole').text(currency + unlim_annually_whole);
+        $('#unlim_price_fraction').text('.' + unlim_annually_fraction);
         $('#plus_bill_frequency').text('per year');
         $('#unlim_bill_frequency').text('per year');
+        $('#plus_lookup_key').val(plus_lookup_key + '-yearly');
+        $('#unlim_lookup_key').val(unlim_lookup_key + '-yearly');
+        // set price lookup key
       } else {
         // monthly
         $('#plus_price_whole').text(currency + plus_monthly_whole);
@@ -38,6 +42,9 @@
         $('#unlim_price_fraction').text('.' + unlim_monthly_fraction);
         $('#plus_bill_frequency').text('per month');
         $('#unlim_bill_frequency').text('per month');
+        $('#plus_lookup_key').val(plus_lookup_key + '-monthly');
+        $('#unlim_lookup_key').val(unlim_lookup_key + '-monthly');
+        // set price lookup key
       }
     });
   });
@@ -76,9 +83,11 @@
             </ul>
           </div>
           <div class="card-footer text-center">
-            <!-- if user hasnt started trial before -->
+            {% if user.tier == "free" %}
             <a href="" class="btn btn-outline-primary disabled">Current plan</a> 
-            <!-- else subscribe -->
+            {% else %}
+            <a href="/create-portal-session" class="btn btn-outline-primary px-3 py-2">Downgrade <i class="bi bi-arrow-up-right"></i></a> 
+            {% endif %}
           </div>
         </div>
       </div>
@@ -106,9 +115,18 @@
             </ul>
           </div>
           <div class="card-footer text-center">
-            <!-- if user hasnt started trial before -->
-            <a href="" class="btn btn-primary px-3 py-2">Start trial  <i class="bi bi-arrow-up-right"></i></a> 
-            <!-- else subscribe -->
+            {% if user.tier == "plus" %}
+            <a href="" class="btn btn-outline-primary disabled">Current plan</a> 
+            {% else %}
+            <form action="/create-checkout-session" method="POST">
+              <input id="plus_lookup_key" type="hidden" name="lookup_key" value="{{PLUS_LOOKUP_KEY}}" />
+              {% if user.has_trialed %}
+              <button type="submit" class="btn btn-primary px-3 py-2">Subscribe  <i class="bi bi-arrow-up-right"></i></button> 
+              {% else %}
+              <button type="submit" class="btn btn-primary px-3 py-2">Start trial  <i class="bi bi-arrow-up-right"></i></button> 
+              {% endif %}
+            </form>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -136,12 +154,18 @@
             </ul>
           </div>
           <div class="card-footer text-center">
-            <!-- if user hasnt started trial before -->
+            {% if user.tier == "unlimited" %}
+            <a href="" class="btn btn-outline-primary disabled">Current plan</a> 
+            {% else %}
             <form action="/create-checkout-session" method="POST">
-              <input type="hidden" name="lookup_key" value="{{PRICE_LOOKUP_KEY}}" />
-              <button type="submit" class="btn btn-outline-primary px-3 py-2">Start trial  <i class="bi bi-arrow-up-right"></i></button> 
+              <input id="unlim_lookup_key" type="hidden" name="lookup_key" value="{{UNLIM_LOOKUP_KEY}}" />
+              {% if user.has_trialed %}
+              <button type="submit" class="btn btn-primary px-3 py-2">Subscribe  <i class="bi bi-arrow-up-right"></i></button> 
+              {% else %}
+              <button type="submit" class="btn btn-primary px-3 py-2">Start trial  <i class="bi bi-arrow-up-right"></i></button> 
+              {% endif %}
             </form>
-            <!-- else subscribe -->
+            {% endif %}
           </div>
         </div>
       </div>

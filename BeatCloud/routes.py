@@ -42,15 +42,15 @@ CREATOMATE_API_KEY = os.environ.get('CREATOMATE_API_KEY')
 
 @app.route("/")
 def home():
-    # landing page
     if current_user.is_authenticated:
-        return render_template("home.html", name=current_user.name, email=current_user.email, pic=current_user.picture, title="Home")
+        return redirect(url_for('create'))
+        # return render_template("home.html", name=current_user.name, email=current_user.email, pic=current_user.picture, title="Home")
     else:
         print("User not authenticated - Redirecting to login")
         return redirect(url_for("login"))
 
 @login_required
-@app.route("/create/", methods=['GET'])
+@app.route("/create", methods=['GET'])
 def create():
     if not current_user.is_authenticated:
         return redirect('login')
@@ -386,7 +386,7 @@ def account():
     tier_config = app.config['TIERS'][current_user.tier] # Defines limits etc.  
 
     # Time until usage reset
-    user_reset_timestamp = current_user.user_billing_reset
+    user_reset_timestamp = current_user.user_usage_reset
     now = datetime.now().timestamp()
     time_delta = float(user_reset_timestamp) - now
     limit_reset_countdown = floor(time_delta / (60 * 60 * 24)) 
@@ -398,7 +398,14 @@ def account():
 def login():
     if current_user.is_authenticated:
         #send to home
-        return redirect('/')
+        next = request.args.get('next')
+        # url_has_allowed_host_and_scheme should check if the url is safe
+        # for redirects, meaning it matches the request host.
+        # See Django's url_has_allowed_host_and_scheme for an example.
+        if not url_has_allowed_host_and_scheme(next, request.host):
+            return abort(400)
+
+        return redirect(next or url_for('index'))
     return render_template("login.html", title="Login")
 
 
@@ -411,15 +418,35 @@ def checkout():
     currency = 'usd'
     PLUS_LOOKUP_KEY=f'bc-plus-{currency}'
     UNLIM_LOOKUP_KEY=f'bc-unlim-{currency}'
-    plus_monthly = stripe.Price.list(lookup_keys=[PLUS_LOOKUP_KEY])
+    plus_monthly = stripe.Price.list(lookup_keys=[f'{PLUS_LOOKUP_KEY}-monthly'])
     plus_monthly_price = str(plus_monthly['data'][0]['unit_amount']/100).split(".")
-    unlim_monthly = stripe.Price.list(lookup_keys=[UNLIM_LOOKUP_KEY])
+    unlim_monthly = stripe.Price.list(lookup_keys=[f'{UNLIM_LOOKUP_KEY}-monthly'])
     unlim_monthly_price = str(unlim_monthly['data'][0]['unit_amount']/100).split(".")
-    return render_template('pricing.html', title="Pricing", plus_monthly=plus_monthly, plus_monthly_price=plus_monthly_price, unlim_monthly=unlim_monthly, unlim_monthly_price=unlim_monthly_price, user=current_user, tiers=app.config['TIERS'])
+    plus_annually = stripe.Price.list(lookup_keys=[f'{PLUS_LOOKUP_KEY}-yearly'])
+    plus_annually_price = str(plus_annually['data'][0]['unit_amount']/100).split(".")
+    unlim_annually  = stripe.Price.list(lookup_keys=[f'{UNLIM_LOOKUP_KEY}-yearly'])
+    unlim_annually_price = str(unlim_annually['data'][0]['unit_amount']/100).split(".")
+    prices = {
+        'plus':{
+            'monthly':plus_monthly_price,
+            'annually':plus_annually_price
+        },
+        'unlimited':{
+            'monthly':unlim_monthly_price,
+            'annually':unlim_annually_price
+        }
+    }
+    return render_template('pricing.html', title="Pricing", prices=prices, tiers=app.config['TIERS'], user=current_user, PLUS_LOOKUP_KEY=PLUS_LOOKUP_KEY, UNLIM_LOOKUP_KEY=UNLIM_LOOKUP_KEY)
 
 @app.route('/create-checkout-session', methods=['POST'])
 @login_required
 def create_checkout_session():
+    sub_data = {}
+    has_trialed = True
+    if not has_trialed:
+        sub_data = {
+                'trial_period_days': 7
+            }
     try:
         prices = stripe.Price.list(
             lookup_keys=[request.form['lookup_key']],
@@ -438,9 +465,13 @@ def create_checkout_session():
             success_url='https://usebeatcloud.com' +
             '/success.html?session_id={CHECKOUT_SESSION_ID}',
             cancel_url='https://usebeatcloud.com' + '/cancel.html',
-            subscription_data={
-                'trial_period_days': 7
+            subscription_data=sub_data,
+            automatic_tax={
+                'enabled':True
             },
+            customer_update={
+                'address':'auto'
+            }
         )
         return redirect(checkout_session.url, code=303)
     except Exception as e:
@@ -462,11 +493,7 @@ def customer_portal():
 
 @app.route('/webhook', methods=['POST'])
 def webhook_received():
-    # Replace this endpoint secret with your endpoint's unique secret
-    # If you are testing with the CLI, find the secret by running 'stripe listen'
-    # If you are using an endpoint defined with the API or dashboard, look in your webhook settings
-    # at https://dashboard.stripe.com/webhooks
-    webhook_secret = 'whsec_f7de043651e54e3b4456d565d1f363e110c469ed14ff77130dc721501f22ac5a'
+    webhook_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
     request_data = json.loads(request.data)
 
     if webhook_secret:
@@ -488,96 +515,77 @@ def webhook_received():
     print('event ' + event_type)
 
     if event_type == 'checkout.session.completed':
-        print('🔔 Payment succeeded!')
+        cust = stripe.Customer.retrieve(data_object.customer).id
+        try:
+            #  Allow accesss
+            user = beatcloud_db.get_user_by_stripe_id(cust)[0]
+            user_id = user['PK'].split('#')[1]
+            sub = data_object.subscription
+            prod = stripe.Subscription.retrieve(sub).plan.product
+            tier = stripe.Product.retrieve(prod).metadata.tier
+            beatcloud_db.set_user_tier(user_id, tier)
+            print(f'Payment succeeded for user {user_id}. Tier set to {tier}!')
+        except KeyError as e:
+            print(f"Payment succeeded but could not update tier - Couldn't find user with StripeID:{cust}")
+            
+    elif event_type == 'invoice.paid':
+        # continue allowing access: store status in db and check when user accesses
+        cust = stripe.Customer.retrieve(data_object.customer).id
+        try:
+            user = beatcloud_db.get_user_by_stripe_id(cust)[0]
+            user_id = user['PK'].split('#')[1]
+            product = data_object.lines.data[0].plan.product # Can assume only 1 item in invoice
+            subscription_tier = stripe.Product.retrieve(product).metadata.tier
+            if user['tier'] != subscription_tier: # Update tier
+                beatcloud_db.set_user_tier(subscription_tier)
+            print("Invoice paid continuing access")
+        except KeyError as e:
+            print(f"Could not update subscription - couldn't find user with StripeID:{cust}")
+
+    elif event_type in ['invoice.payment_failed', 'invoice.finalization_failed']:
+        # Fires when payments have failed - so do not give access
+        cust = stripe.Customer.retrieve(data_object.customer).id
+        try:
+            #  revoke accesss
+            user = beatcloud_db.get_user_by_stripe_id(cust)[0]
+            user_id = user['PK'].split('#')[1]
+            beatcloud_db.set_user_tier(user_id, 'free')
+            print(f'Subscription canceled for user {user_id}. Set tier to FREE')
+        except KeyError as e:
+            print(f"Could not update subscription - couldn't find user with StripeID:{cust}")
+    
+    elif event_type == 'customer.subscription.updated':
+        # Fires if user cancels plan (but has access until end of billing date) & when updating tier
+        cust = stripe.Customer.retrieve(data_object.customer).id
+        try:
+            user = beatcloud_db.get_user_by_stripe_id(cust)[0]
+            user_id = user['PK'].split('#')[1]
+            product = data_object.plan.product
+            tier = stripe.Product.retrieve(product).metadata.tier
+            beatcloud_db.set_user_tier(user_id, tier)
+            print(f'Subscription updated: User {user_id}, StripeID {cust}, Event', event.id)
+        except KeyError as e:
+            print(f"Could not update subscription - couldn't find user with StripeID:{cust}")
+    
+    elif event_type == 'customer.subscription.deleted':
+        # Fires when subscriptions have entirely cancelled
+        cust = stripe.Customer.retrieve(data_object.customer).id
+        try:
+            #  Revoke accesss
+            user = beatcloud_db.get_user_by_stripe_id(cust)[0]
+            user_id = user['PK'].split('#')[1]
+            beatcloud_db.set_user_tier(user_id, 'free')
+            print(f'Subscription canceled for user {user_id}. Set tier to FREE')
+        except KeyError as e:
+            print(f"Could not update subscription - couldn't find user with StripeID:{cust}")
+
     elif event_type == 'customer.subscription.trial_will_end':
         # notify user of ending trial
         print('Subscription trial will end')
-    elif event_type == 'customer.subscription.created':
-        # 
-        print('Subscription created %s', event.id)
-    elif event_type == 'customer.subscription.updated':
-        # update tier & limits
-        print('Subscription created %s', event.id)
-    elif event_type == 'customer.subscription.deleted':
-        #  revoke accesss
-        print('Subscription canceled: %s', event.id)
+
+    ## revoke access while paused??
 
     return jsonify({'status': 'success'})
-
-# @app.route('/portal', methods=["GET"])
-# @login_required
-# def create_stripe_portal():
-#     stripe_id = current_user.stripe_id
-#     portal = stripe.billing_portal.Session.create(
-#         customer=stripe_id,
-#         return_url="https://app.usebeatcloud.com/account", # the return URL
-#     )
-#     return redirect(portal['url'])
-
-# @app.route('/changeplan', methods=["GET"])
-# @login_required
-# def change_plan():
-#     if current_user.tier != "free": # User already subscribed and can change plan in customer portal
-#         return redirect(url_for('create_stripe_portal'))
-#     else:
-#         # pricing table
-#         return render_template('pricing.html', title="Plans", user=current_user)
-
-# @app.route('/webhook', methods=['POST'])
-# def webhook():
-#     event = None
-#     payload = request.data
-
-#     try:
-#         event = json.loads(payload)
-#     except json.decoder.JSONDecodeError as e:
-#         print('⚠️  Webhook error while parsing basic request.' + str(e))
-#         return jsonify(success=False)
-#     if endpoint_secret:
-#         # Only verify the event if there is an endpoint secret defined
-#         # Otherwise use the basic event deserialized with json
-#         sig_header = request.headers.get('stripe-signature')
-#         try:
-#             event = stripe.Webhook.construct_event(
-#                 payload, sig_header, endpoint_secret
-#             )
-#         except stripe.error.SignatureVerificationError as e:
-#             print('⚠️  Webhook signature verification failed.' + str(e))
-#             return jsonify(success=False)
-
-#     # Handle the event
-#     if event and event['type'] == 'payment_intent.succeeded':
-#         payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
-#         print('Payment for {} succeeded'.format(payment_intent['amount']))
-#         # Then define and call a method to handle the successful payment intent.
-#         # handle_payment_intent_succeeded(payment_intent)
-#     elif event['type'] == 'payment_method.attached':
-#         payment_method = event['data']['object']  # contains a stripe.PaymentMethod
-#         # Then define and call a method to handle the successful attachment of a PaymentMethod.
-#         # handle_payment_method_attached(payment_method)
-#     else:
-#         # Unexpected event type
-#         print('Unhandled event type {}'.format(event['type']))
-
-#     return jsonify(success=True)
-
-## ROUTE TO CHECKOUT
-# get price ID from user selection
-        # price_id = '{{PRICE_ID}}'
-        # session = stripe.checkout.Session.create(
-        # success_url='https://www.usebeatcloud.com/thankyou/{CHECKOUT_SESSION_ID}',
-        # cancel_url='https:///www.usebeatcloud.com/canceled',
-        # mode='subscription',
-        # customer=current_user.stripe_id,
-        # line_items=[{
-        #     'price': price_id,
-        #     # For metered billing, do not pass quantity
-        #     'quantity': 1
-        # }],
-        # )
-
-        # # Redirect to the URL returned on the session
-        # return redirect(session.url, code=303)
 
 ################################################################################################################################################################
 ### Visualizers
@@ -1283,35 +1291,42 @@ def callback():
         return "User email not available or not verified by Google.", 400
 
     # Doesn't exist? Add user to the database.
+    # thinking i must not have to load the user here from db when it is loaded by init.py in load_user again??
     db_user = beatcloud_db.get_user(userinfo["id"])
     if not db_user:
         # Create stripe customer and get id
-        cust = stripe.Customer.create(
+        cust_id = stripe.Customer.create(
             email=userinfo["email"]
-        )
+        ).id
+        tier = 'free' # initial tier
+        asset_usage = 0 # initial usage
+        preset_usage = 0 # initial usage
+        video_usage = 0 # initial usage
 
         # Add user
-        # user_billing_reset = int((datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=30)).timestamp()) # Midnight 30 days from now
-        user_billing_reset = int((datetime.now() + timedelta(minutes=2)).timestamp()) # debug 2 min 
-        beatcloud_db.add_user(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust.id, user_billing_reset) 
+        # user_usage_reset = int((datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=30)).timestamp()) # Midnight 30 days from now
+        user_usage_reset = int((datetime.now() + timedelta(minutes=2)).timestamp()) # debug 2 min 
+        beatcloud_db.add_user(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust_id, user_usage_reset) 
 
         # Stripe ID for tier updates
-        cust_id =  cust.id
-
         # Create directory for permenant storage of video & assets
         # create_user_dirs(userinfo["id"]) # not sure if need??
     else:
         cust_id = db_user["stripe_id"]
-        user_billing_reset = db_user["billing_reset_timestamp"]
+        user_usage_reset = db_user["usage_reset_timestamp"]
+        tier = db_user["tier"]
+        asset_usage = db_user["asset_count"]
+        preset_usage = db_user["preset_count"]
+        video_usage = db_user["monthly_video_count"]
 
     # Create User obj
-    user = User(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust_id, user_billing_reset)
+    user = User(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust_id, user_usage_reset, tier, asset_usage, preset_usage, video_usage)
 
     # Begin session by logging the user in
-    login_user(user)
+    login_user(user, remember=True)
 
     # Send user back to homepage
-    return redirect(url_for("home", _external=True))
+    return redirect(url_for("create", _external=True))
    
 
 def create_user_dirs(user_id):

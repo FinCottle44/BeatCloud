@@ -33,7 +33,7 @@
       const status_styles = {'Pending':'purple', 'Pre-Processing':'info', 'Queued':'indigo', 'Rendering':'warning', 'Ready':'secondary', 'Failed':'danger', 'Upload Failed':'danger','Uploading':'primary', 'Uploaded':'success'};
     </script>
 
-    {% if user.locked == True and active_page not in ['assets', 'account'] %}
+    {% if user.locked == True and active_page not in ['assets', 'account', 'pricing'] %}
     <script>
       // Check for locked acount
       $(window).on('load', function() {
@@ -63,14 +63,14 @@
         <div class="collapse navbar-collapse" id="navbarColor01">
           <ul class="navbar-nav me-auto">
             <li class="nav-item">
-              <a class="nav-link" href="/">Home</a>
+              <a class="nav-link {{'active' if active_page == 'create' else ''}}" href="/create">Create</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link {{'active' if active_page == 'create' else ''}}" href="/create">Create Visualizer
+              <a class="nav-link {{'active' if active_page == 'visualizers' else ''}}" href="/visualizers">My Visualizers
                 <span class="visually-hidden">(current)</span></a>
             </li>
             <li class="nav-item">
-              <a class="nav-link {{'active' if active_page == 'visualizers' else ''}}" href="/visualizers">My Visualizers</a>
+              <a class="nav-link {{'active' if active_page == 'assets' else ''}}" href="/assets">My Assets</a>
             </li>
           </ul>
           <ul class="navbar-nav">
@@ -78,7 +78,8 @@
               <a class="nav-link dropdown-toggle {{'active' if active_page == 'account' else ''}}" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">{{user.name}}</a>
               <div class="dropdown-menu dropdown-menu-right mb-3">
                 <a class="dropdown-item" href="/account">My account</a>
-                <a class="dropdown-item" href="/assets">My assets</a>
+                <a class="dropdown-item" href="#">Help</a>
+                <!-- <a class="dropdown-item" href="/assets">My assets</a> -->
                 <div class="dropdown-divider"></div>
                 <a class="dropdown-item" href="/logout">Log out of <strong>{{user.name}}</strong></a>
               </div>
@@ -120,7 +121,7 @@
             <p>Don't panic! </p>
             <p>We're just letting you know that you are <strong>currently exceeding your plan's limits.</strong></p>
             <!-- <p>Please proceed to <a href="/assets">My Assets</a> to delete unused assets, <a href="/account">My Account</a> to delete any unused presets, or <a href="#">Upgrade your plan</a></p> -->
-            <p>Please proceed to <a href="/account">My Account</a> to see your current usage or <a href="#">Upgrade your plan</a></p>
+            <p>Please proceed to <a href="/account">My Account</a> to see your current usage or <a href="/pricing">Upgrade your plan</a></p>
             <img style="width:15rem;" src="{{ url_for('static', filename='img/inline-dark-small.png') }}" alt="">
           </div>
         </div>
