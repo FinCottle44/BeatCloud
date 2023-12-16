@@ -1,7 +1,6 @@
 import os, boto3, stripe
 from flask import Flask
 from flask_login import LoginManager, UserMixin
-from flask_crontab import Crontab
 from oauthlib.oauth2 import WebApplicationClient
 from datetime import datetime, timedelta
 
@@ -116,14 +115,6 @@ if not exists:
     beatcloud_db.create_table(table_name)
     print(f"\nCreated table {beatcloud_db.table.name}.")
 
-#### Crontab setup & jobs
-crontab = Crontab(app)
-@crontab.job() # todo every day
-def reset_free_limits():
-    # search for users that billing date expired yesterday
-    # we set the user expiry date in db
-    pass
-
 #####
 # Flask-Login helper to retrieve a user from our db
 ### TRY REPLACING OAUTH LOGIN STUFF HERE
@@ -141,22 +132,25 @@ def load_user(user_id):
         asset_usage = db_user["asset_count"]
         preset_usage = db_user["preset_count"]
         video_usage = db_user["monthly_video_count"]
-        user = User(id, name, email, picture, stripe_id, usage_reset_timestamp, tier, asset_usage, preset_usage, video_usage)
+        credits = db_user["video_credits"]
+        has_trialed = db_user["has_trialed"]
+        user = User(id, name, email, picture, stripe_id, usage_reset_timestamp, tier, asset_usage, preset_usage, video_usage, credits, has_trialed)
     else:
         print("User not found")
         user = None
     return user
 
 class User(UserMixin):
-    def __init__(self, id, name, email, picture, stripe_id, user_usage_reset, tier, asset_usage, preset_usage, video_usage):
+    def __init__(self, id, name, email, picture, stripe_id, user_usage_reset, tier, asset_usage, preset_usage, video_usage, credits, has_trialed):
         self.id = id
         self.name = name
         self.email = email
         self.picture = picture
         self.stripe_id = stripe_id
         self.user_usage_reset = self.check_if_past_reset(float(user_usage_reset))
-        self.has_trialed = True
+        self.has_trialed = has_trialed
         self.tier = tier
+        self.credits = credits
         self.locked = self.check_tier_limits(asset_usage, preset_usage, video_usage) # We lock accounts if they exceed tier limits & prompt users to delete some assets/templates (in layout.html)
 
     def __str__(self) -> str:
@@ -164,7 +158,7 @@ class User(UserMixin):
   
     def check_tier_limits(self, asset_usage, preset_usage, video_usage):
         tier = app.config["TIERS"][self.tier]
-        return video_usage > tier['preset_limit'] or asset_usage > tier['asset_limit'] or preset_usage > tier['preset_limit']# if true account locked
+        return video_usage >= int(tier['monthly_vid_limit']) + int(self.credits) or asset_usage > tier['asset_limit'] or preset_usage > tier['preset_limit']# if true account locked
              
     def check_if_past_reset(self, curr_reset):
         print("Checking if past user's reset")
@@ -172,6 +166,7 @@ class User(UserMixin):
         if curr_reset <= now: # is in past
             try:
                 beatcloud_db.set_user_video_usage(self.id, 0)
+                beatcloud_db.set_user_credits(self.id, 0)
                 month_from_current = int((datetime.fromtimestamp(curr_reset) + timedelta(days=30)).timestamp())
                 beatcloud_db.set_user_usage_reset(self.id, month_from_current)
                 print("RESET USERS USAGE & SET FORECAST DATE")

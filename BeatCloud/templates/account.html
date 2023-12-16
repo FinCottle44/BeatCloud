@@ -54,11 +54,17 @@
               <h6 class="card-title">Videos this month:</h6>
               <div class="row align-items-end">
                 <div class="col-auto">
-                  <span id="user_monthly_video_count" style="font-size:42px;" class="px-2 {{'text-danger' if 0 >= user_tier_config['monthly_vid_limit'] else 'text-primary'}}">{{video_usage}}</span>
-                  <span class="text-end">/ </span>{{user_tier_config['monthly_vid_limit'] if user.tier != 'unlimited' else '<i class="bi bi-infinity"></i>'|safe}}
+                  <span id="user_monthly_video_count" style="font-size:42px;" class="px-2 {{'text-danger' if video_usage >= video_limit else 'text-primary'}}">{{video_usage}}</span>
+                  <span class="text-end">/ </span>{{video_limit if user.tier != 'unlimited' else '<i class="bi bi-infinity"></i>'|safe}}
                 </div>
                 {% if user.tier != 'unlimited' %}
                 <div class="col">
+                  <!-- Add credit form -->
+                  <form action="/create-checkout-session" method="POST">
+                    <input id="credit_lookup_key" type="hidden" name="lookup_key" value="{{CREDIT_LOOKUP_KEY}}" />
+                    <button type="submit" class="btn p-0 text-end text-primary w-100"><i class="bi bi-plus-circle"></i>  Add credits</button> 
+                  </form>
+                    <!-- <a href="/add-credits" class="mb-2 d-block text-end text-primary" style="font-size: 16px !important; cursor:pointer; text-decoration: none;"><i class="bi bi-bag-plus-fill"></i> Add credits</a> -->
                     <h6 class="text-muted text-end mb-2" style="font-size: 16px !important">Resets in {{limit_reset_countdown}} days</h6>
                 </div>
                 {% endif %}
@@ -69,8 +75,8 @@
       </div>
       <div class="row">
         <div class="col text-center">
-          {% if user.tier == 'free' %}
-            <a class="btn btn-primary" href="/pricing">Upgrade <i class="bi bi-arrow-up-right"></i></a>
+          {% if not has_subscription %}
+            <a class="btn btn-primary" href="/pricing">Upgrade subscription<i class="bi bi-arrow-up-right"></i></a>
           {% else %}
             <a class="btn btn-primary" href="/create-portal-session">Manage my subscription <i class="bi bi-arrow-up-right"></i></a>
           {% endif %}
@@ -83,7 +89,7 @@
     <div class="row">
       <h3>Presets & Templates</h3>
       <div class="row mb-3">
-        <p class="text-muted">Defined when creating and uploading Visualizers.</p>
+        <p class="text-muted mb-4">Defined when creating and uploading Visualizers.</p>
         <!-- <p class="text-muted">Presets allow you to save a Visualizer's configuration for later rendering of other videos. Everything that can be tweaked on BeatCloud can be saved.</p> -->
         <!-- <p class="text-muted">Templates allow you to define placeholders for certain words or values in your YouTube metadata when uploading.</p> -->
         <!-- Presets -->

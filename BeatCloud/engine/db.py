@@ -93,8 +93,10 @@ class BC_Table:
                 'asset_count':0,
                 'preset_count':0,
                 'monthly_video_count':0,
+                'video_credits':0,
                 'usage_reset_timestamp':user_usage_reset,
-                'tier': 'free'
+                'tier': 'free',
+                'has_trialed': False
                 }
             )
         except ClientError as e:
@@ -147,6 +149,57 @@ class BC_Table:
             )
         except ClientError as e:
             print(f"Couldn't get asset count for User {user_id}: {e}")
+            return e
+        
+    def increment_user_credits(self, user_id, value):
+        try:
+            response = self.table.update_item(
+                Key={
+                    'PK': f'USER#{user_id}',
+                    'SK': f'METADATA#{user_id}' 
+                },
+                UpdateExpression="SET video_credits = video_credits + :val",
+                ExpressionAttributeValues={
+                    ':val': value
+                },
+                ReturnValues="UPDATED_NEW"
+            )
+        except ClientError as e:
+            print(f"Couldn't set credits for User {user_id}: {e}")
+            return e
+        
+    def set_user_credits(self, user_id, value):
+        try:
+            response = self.table.update_item(
+                Key={
+                    'PK': f'USER#{user_id}',
+                    'SK': f'METADATA#{user_id}' 
+                },
+                UpdateExpression="SET video_credits = :val",
+                ExpressionAttributeValues={
+                    ':val': value
+                },
+                ReturnValues="UPDATED_NEW"
+            )
+        except ClientError as e:
+            print(f"Couldn't set credits for User {user_id}: {e}")
+            return e
+        
+    def set_user_has_trialed(self, user_id, value):
+        try:
+            response = self.table.update_item(
+                Key={
+                    'PK': f'USER#{user_id}',
+                    'SK': f'METADATA#{user_id}' 
+                },
+                UpdateExpression="SET has_trialed = :val",
+                ExpressionAttributeValues={
+                    ':val': value
+                },
+                ReturnValues="UPDATED_NEW"
+            )
+        except ClientError as e:
+            print(f"Couldn't set credits for User {user_id}: {e}")
             return e
         
     def get_user_preset_usage(self, user_id):

@@ -378,21 +378,29 @@ def assets():
 def account():
     user_templates = beatcloud_db.get_all_templates(current_user.id)
     user_presets = beatcloud_db.get_all_presets(current_user.id)
+    
+    currency = 'usd'
+    CREDIT_LOOKUP_KEY = f'bc-3-credits-{currency}'
     # GET USER ONCE NOT ALL THOSE THINGS 
-    usage = beatcloud_db.get_user(current_user.id)
-    asset_usage = usage["asset_count"]
-    video_usage = usage["monthly_video_count"]
-    preset_usage = usage["preset_count"]
-    tier_config = app.config['TIERS'][current_user.tier] # Defines limits etc.  
 
+    user = beatcloud_db.get_user(current_user.id)
+    # TODO pass in user instead?
+    asset_usage = user["asset_count"]
+    video_usage = user["monthly_video_count"]
+    preset_usage = user["preset_count"]
+    tier_config = app.config['TIERS'][current_user.tier] # Defines limits etc.  
+    video_limit = int(tier_config['monthly_vid_limit']) + int(user["video_credits"])
+    
     # Time until usage reset
     user_reset_timestamp = current_user.user_usage_reset
     now = datetime.now().timestamp()
     time_delta = float(user_reset_timestamp) - now
     limit_reset_countdown = floor(time_delta / (60 * 60 * 24)) 
-        
     # for unlimited there is no limit so no countdown
-    return render_template("account.html", user=current_user, title="Account", user_templates=user_templates, user_presets=user_presets, user_tier_config=tier_config, asset_usage=asset_usage, video_usage=video_usage, preset_usage=preset_usage, limit_reset_countdown=limit_reset_countdown)
+    
+    # link to manage subscription if paused etc
+    has_subscription = len(stripe.Subscription.list(customer=user['stripe_id'])) > 0
+    return render_template("account.html", user=current_user, title="Account", user_templates=user_templates, user_presets=user_presets, user_tier_config=tier_config, asset_usage=asset_usage, video_usage=video_usage, preset_usage=preset_usage, limit_reset_countdown=limit_reset_countdown, has_subscription=has_subscription, CREDIT_LOOKUP_KEY=CREDIT_LOOKUP_KEY, video_limit=video_limit)
 
 @app.route("/login/", methods=["POST", "GET"])
 def login():
@@ -442,12 +450,18 @@ def checkout():
 @login_required
 def create_checkout_session():
     sub_data = {}
-    has_trialed = True
-    if not has_trialed:
-        sub_data = {
-                'trial_period_days': 7
-            }
+    has_trialed = current_user.has_trialed # test
     try:
+        lookup_key = request.form['lookup_key']
+        if 'plus' in lookup_key or 'unlim' in lookup_key:
+            mode = 'subscription'
+            if not has_trialed:
+                sub_data = {
+                    'trial_period_days': 7
+                }
+        else:
+            mode = 'payment'
+
         prices = stripe.Price.list(
             lookup_keys=[request.form['lookup_key']],
             expand=['data.product']
@@ -461,10 +475,10 @@ def create_checkout_session():
                 },
             ],
             customer=current_user.stripe_id,
-            mode='subscription',
-            success_url='https://usebeatcloud.com' +
+            mode=mode,
+            success_url='https://app.usebeatcloud.com' +
             '/success.html?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url='https://usebeatcloud.com' + '/cancel.html',
+            cancel_url='https://app.usebeatcloud.com' + '/cancel.html',
             subscription_data=sub_data,
             automatic_tax={
                 'enabled':True
@@ -476,7 +490,8 @@ def create_checkout_session():
         return redirect(checkout_session.url, code=303)
     except Exception as e:
         print(e)
-        return "Server error", 500
+        # log to db
+        return "Internal server error", 500
 
 @app.route('/create-portal-session', methods=['GET'])
 @login_required
@@ -513,21 +528,38 @@ def webhook_received():
     data_object = data['object']
 
     print('event ' + event_type)
-
     if event_type == 'checkout.session.completed':
         cust = stripe.Customer.retrieve(data_object.customer).id
-        try:
-            #  Allow accesss
-            user = beatcloud_db.get_user_by_stripe_id(cust)[0]
-            user_id = user['PK'].split('#')[1]
-            sub = data_object.subscription
-            prod = stripe.Subscription.retrieve(sub).plan.product
-            tier = stripe.Product.retrieve(prod).metadata.tier
-            beatcloud_db.set_user_tier(user_id, tier)
-            print(f'Payment succeeded for user {user_id}. Tier set to {tier}!')
-        except KeyError as e:
-            print(f"Payment succeeded but could not update tier - Couldn't find user with StripeID:{cust}")
-            
+        if data_object.subscription: # Subscription purchased
+            try:
+                #  Allow accesss
+                user = beatcloud_db.get_user_by_stripe_id(cust)[0]
+                user_id = user['PK'].split('#')[1]
+                sub = stripe.Subscription.retrieve(data_object.subscription)
+                prod = sub.plan.product
+                tier = stripe.Product.retrieve(prod).metadata.tier
+                beatcloud_db.set_user_tier(user_id, tier)
+
+                # Update has_trialed status
+                if sub.status == 'trialing':
+                    print('User has used trial updating DB')
+                    beatcloud_db.set_user_has_trialed(user_id, True)
+
+                print(f'Payment succeeded for user {user_id}. Tier set to {tier}!')
+            except KeyError as e:
+                print(f"Payment succeeded but could not update tier - Couldn't find user with StripeID:{cust}")
+        else: # Credits purchased 
+            try:
+                #  Allow accesss
+                user = beatcloud_db.get_user_by_stripe_id(cust)[0]
+                user_id = user['PK'].split('#')[1]
+                # get amount of credits
+                prod = stripe.checkout.Session.list_line_items(data_object.id).data[0].price.product
+                credit_count = int(stripe.Product.retrieve(prod).metadata.credits)
+                beatcloud_db.increment_user_credits(user_id, credit_count)
+                print(f'Payment succeeded for user {user_id}. Incremeneted credits by {credit_count}!')
+            except KeyError as e:
+                print(f"Erorr updating user credits; {e}")
     elif event_type == 'invoice.paid':
         # continue allowing access: store status in db and check when user accesses
         cust = stripe.Customer.retrieve(data_object.customer).id
@@ -537,13 +569,14 @@ def webhook_received():
             product = data_object.lines.data[0].plan.product # Can assume only 1 item in invoice
             subscription_tier = stripe.Product.retrieve(product).metadata.tier
             if user['tier'] != subscription_tier: # Update tier
-                beatcloud_db.set_user_tier(subscription_tier)
+                beatcloud_db.set_user_tier(user_id, subscription_tier)
             print("Invoice paid continuing access")
         except KeyError as e:
             print(f"Could not update subscription - couldn't find user with StripeID:{cust}")
 
     elif event_type in ['invoice.payment_failed', 'invoice.finalization_failed']:
         # Fires when payments have failed - so do not give access
+        # TODO HANDLE CREDIT PURCHASES SEPARATELY
         cust = stripe.Customer.retrieve(data_object.customer).id
         try:
             #  revoke accesss
@@ -555,15 +588,21 @@ def webhook_received():
             print(f"Could not update subscription - couldn't find user with StripeID:{cust}")
     
     elif event_type == 'customer.subscription.updated':
-        # Fires if user cancels plan (but has access until end of billing date) & when updating tier
-        cust = stripe.Customer.retrieve(data_object.customer).id
+        # Fires if user cancels plan (but has access until end of billing date) & when updating tier & when pausing
         try:
+            # Get user ID
+            cust = stripe.Customer.retrieve(data_object.customer).id
             user = beatcloud_db.get_user_by_stripe_id(cust)[0]
             user_id = user['PK'].split('#')[1]
-            product = data_object.plan.product
-            tier = stripe.Product.retrieve(product).metadata.tier
-            beatcloud_db.set_user_tier(user_id, tier)
-            print(f'Subscription updated: User {user_id}, StripeID {cust}, Event', event.id)
+
+            if data_object.pause_collection: # User has paused
+                beatcloud_db.set_user_tier(user_id, 'free')
+                print(f"CUSTOMER {cust} HAS PAUSED COLLCETION - SETTING TIER TO FREE")
+            else: # User has either resumed or upgraded
+                product = data_object.plan.product
+                tier = stripe.Product.retrieve(product).metadata.tier
+                beatcloud_db.set_user_tier(user_id, tier)
+                print(f'Subscription updated: User {user_id}, StripeID {cust}, Event', event.id)
         except KeyError as e:
             print(f"Could not update subscription - couldn't find user with StripeID:{cust}")
     
@@ -1302,6 +1341,8 @@ def callback():
         asset_usage = 0 # initial usage
         preset_usage = 0 # initial usage
         video_usage = 0 # initial usage
+        video_credits = 0 # initial 
+        has_trialed = False # initial 
 
         # Add user
         # user_usage_reset = int((datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=30)).timestamp()) # Midnight 30 days from now
@@ -1318,9 +1359,11 @@ def callback():
         asset_usage = db_user["asset_count"]
         preset_usage = db_user["preset_count"]
         video_usage = db_user["monthly_video_count"]
+        video_credits = db_user["video_credits"]
+        has_trialed = db_user["has_trialed"]
 
     # Create User obj
-    user = User(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust_id, user_usage_reset, tier, asset_usage, preset_usage, video_usage)
+    user = User(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust_id, user_usage_reset, tier, asset_usage, preset_usage, video_usage, video_credits, has_trialed)
 
     # Begin session by logging the user in
     login_user(user, remember=True)
