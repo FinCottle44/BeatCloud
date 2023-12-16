@@ -66,21 +66,21 @@
             {% for layername in user_layers.values() %}
             <!-- foreach -->
             <div id="{{layername}}-col" class="col-lg-4 d-flex justify-content-center "><!-- 'container' -->
-              <div class="shadow card video-card w-100 bg-light mb-3" style="max-width: 20rem; max-height: 15rem;"><!-- 'card' -->
+              <div class="shadow card bg-light mb-3 mx-auto"><!-- 'card' -->
                 <div class="card-header"><!-- 'header' -->
                   <div class="row">
                     <div class="col text-truncate card-title"><!-- 'title' -->
                       {{layername}}
                     </div>
                     <!-- Trash can -->
-                    <div class="col-md-auto"><!-- 'trash-container' -->
+                    <div class="col-auto"><!-- 'trash-container' -->
                       <i onclick="trashcan('{{ layername }}', '{{user.id}}', 'layer')" data-toggle="modal" data-target="#delete_video_modal" class="bi bi-trash delete_vid pull-right" style="float:right;cursor:pointer;font-size: 18px;"></i><!-- 'trash' -->
                     </div>
                   </div>
                   <!-- 29/07/2022 21:22 -->
                 </div>
                 <div class="card-body d-flex align-items-center"><!-- 'thumb_container' -->
-                  <img src="/users/{{user.id}}/layers/{{layername}}" alt="" class="w-100 my-auto"><!-- 'thumb' -->
+                  <img src="/users/{{user.id}}/layers/{{layername}}" alt="" class="w-100 my-auto mx-auto" style=" max-height: 7rem; max-width: 7rem;"><!-- 'thumb' -->
                 </div>
               </div>
             </div>

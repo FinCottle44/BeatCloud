@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from math import floor
 from flask import render_template, url_for, request, redirect, flash, send_from_directory, Response, jsonify, session, json, abort
 from flask_login import current_user, login_required, login_user, logout_user
-from BeatCloud import app, ALLOWED_IMG_EXTENSIONS, ALLOWED_AUDIO_EXTENSIONS, ALLOWED_FONT_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS, GOOGLE_DISCOVERY_URL, beatcloud_db, User, s3
+from BeatCloud import app, ALLOWED_IMG_EXTENSIONS, ALLOWED_AUDIO_EXTENSIONS, ALLOWED_FONT_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS, GOOGLE_DISCOVERY_URL, beatcloud_db, User, s3, load_user
 from BeatCloud.forms import CreateVidForm, UploadForm
 from BeatCloud.engine import ImageTools, yt_upload, tasks
 from BeatCloud.engine.models import *
@@ -65,8 +65,8 @@ def create():
 
     fonts=get_user_fonts(current_user.id)
     layers=get_user_layers(current_user.id)
-
-    return render_template('create.html', title="Create", form=create_form, v_id=v_id, fonts=fonts, user=current_user, layers=layers)
+    layer_count = len(layers)
+    return render_template('create.html', title="Create", form=create_form, v_id=v_id, fonts=fonts, user=current_user, layers=layers, layer_count=layer_count)
 
 # USER FONTS
 def get_user_fonts(u_id):
@@ -605,6 +605,19 @@ def webhook_received():
                 print(f'Subscription updated: User {user_id}, StripeID {cust}, Event', event.id)
         except KeyError as e:
             print(f"Could not update subscription - couldn't find user with StripeID:{cust}")
+    
+    elif event_type == 'customer.subscription.paused':
+        # Fires only when trial ends & there is no payment method
+        try:
+            # Get user ID
+            cust = stripe.Customer.retrieve(data_object.customer).id
+            user = beatcloud_db.get_user_by_stripe_id(cust)[0]
+            user_id = user['PK'].split('#')[1]
+
+            beatcloud_db.set_user_tier(user_id, 'free')
+            print(f"CUSTOMER TRIAL ENDED & PAUSED AS NO PAYMENT METHOD: {cust}")
+        except KeyError as e:
+            print(f"Could not revoke access - couldn't find user with StripeID:{cust}")
     
     elif event_type == 'customer.subscription.deleted':
         # Fires when subscriptions have entirely cancelled
@@ -1331,39 +1344,60 @@ def callback():
 
     # Doesn't exist? Add user to the database.
     # thinking i must not have to load the user here from db when it is loaded by init.py in load_user again??
-    db_user = beatcloud_db.get_user(userinfo["id"])
-    if not db_user:
-        # Create stripe customer and get id
-        cust_id = stripe.Customer.create(
-            email=userinfo["email"]
-        ).id
-        tier = 'free' # initial tier
-        asset_usage = 0 # initial usage
-        preset_usage = 0 # initial usage
-        video_usage = 0 # initial usage
-        video_credits = 0 # initial 
-        has_trialed = False # initial 
+    #####
+    # db_user = beatcloud_db.get_user(userinfo["id"])
+    # if not db_user:
+    #     # Create stripe customer and get id
+    #     cust_id = stripe.Customer.create(
+    #         email=userinfo["email"]
+    #     ).id
+    #     tier = 'free' # initial tier
+    #     asset_usage = 0 # initial usage
+    #     preset_usage = 0 # initial usage
+    #     video_usage = 0 # initial usage
+    #     video_credits = 0 # initial 
+    #     has_trialed = False # initial 
 
-        # Add user
-        # user_usage_reset = int((datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=30)).timestamp()) # Midnight 30 days from now
-        user_usage_reset = int((datetime.now() + timedelta(minutes=2)).timestamp()) # debug 2 min 
-        beatcloud_db.add_user(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust_id, user_usage_reset) 
+    #     # Add user
+    #     # user_usage_reset = int((datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=30)).timestamp()) # Midnight 30 days from now
+    #     user_usage_reset = int((datetime.now() + timedelta(minutes=2)).timestamp()) # debug 2 min 
+    #     beatcloud_db.add_user(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust_id, user_usage_reset) 
 
-        # Stripe ID for tier updates
-        # Create directory for permenant storage of video & assets
-        # create_user_dirs(userinfo["id"]) # not sure if need??
-    else:
-        cust_id = db_user["stripe_id"]
-        user_usage_reset = db_user["usage_reset_timestamp"]
-        tier = db_user["tier"]
-        asset_usage = db_user["asset_count"]
-        preset_usage = db_user["preset_count"]
-        video_usage = db_user["monthly_video_count"]
-        video_credits = db_user["video_credits"]
-        has_trialed = db_user["has_trialed"]
+    #     # Stripe ID for tier updates
+    #     # Create directory for permenant storage of video & assets
+    #     # create_user_dirs(userinfo["id"]) # not sure if need??
+    # else:
+    #     cust_id = db_user["stripe_id"]
+    #     user_usage_reset = db_user["usage_reset_timestamp"]
+    #     tier = db_user["tier"]
+    #     asset_usage = db_user["asset_count"]
+    #     preset_usage = db_user["preset_count"]
+    #     video_usage = db_user["monthly_video_count"]
+    #     video_credits = db_user["video_credits"]
+    #     has_trialed = db_user["has_trialed"]
 
-    # Create User obj
-    user = User(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust_id, user_usage_reset, tier, asset_usage, preset_usage, video_usage, video_credits, has_trialed)
+    # # Create User obj
+    # user = User(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust_id, user_usage_reset, tier, asset_usage, preset_usage, video_usage, video_credits, has_trialed)
+
+    # # Begin session by logging the user in
+    # login_user(user, remember=True)
+    ##########
+
+    # Try to load the user using the user ID
+    user = load_user(userinfo["id"])
+
+    if user is None:
+        # User not found, create a new user
+        cust_id = stripe.Customer.create(email=userinfo["email"]).id
+        # Define their usage reset to 30 days from now (2 min for debug)
+        user_usage_reset = int((datetime.now() + timedelta(minutes=2)).timestamp())
+        # user_usage_reset = int((datetime.now() + timedelta(days=30)).timestamp())
+        
+        # Add user to the database
+        beatcloud_db.add_user(userinfo["id"], userinfo["given_name"], userinfo["email"], userinfo["picture"], cust_id, user_usage_reset)
+
+        # Load the user again after adding to the database
+        user = load_user(userinfo["id"])
 
     # Begin session by logging the user in
     login_user(user, remember=True)
@@ -1371,15 +1405,6 @@ def callback():
     # Send user back to homepage
     return redirect(url_for("create", _external=True))
    
-
-def create_user_dirs(user_id):
-    vid_dir = os.path.join(app.config['UPLOAD_FOLDER'], user_id, "videos")
-    os.makedirs(vid_dir, exist_ok=True)
-    font_dir = os.path.join(app.config['UPLOAD_FOLDER'], user_id, "fonts")
-    os.makedirs(font_dir, exist_ok=True)
-    lay_dir = os.path.join(app.config['UPLOAD_FOLDER'], user_id, "layers")
-    os.makedirs(lay_dir, exist_ok=True)
-
 @app.route("/logout")
 @login_required
 def logout():
