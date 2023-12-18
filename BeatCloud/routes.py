@@ -23,13 +23,13 @@ stripe.api_key = os.environ.get('STRIPE_API_KEY')
 ### ShotStack Setup
 ## Keys
  # Development
-SHOTSTACK_HOST_URL = 'https://api.shotstack.io/stage'
-SHOTSTACK_KEY_TYPE = 'DeveloperKey'
-SHOTSTACK_API_KEY = os.environ.get('SHOTSTACK_API_STAGE_KEY')
- # Production
-# SHOTSTACK_HOST_URL = 'https://api.shotstack.io/v1'
+# SHOTSTACK_HOST_URL = 'https://api.shotstack.io/stage'
 # SHOTSTACK_KEY_TYPE = 'DeveloperKey'
-# SHOTSTACK_API_KEY = os.environ.get('SHOTSTACK_API_PROD_KEY')
+# SHOTSTACK_API_KEY = os.environ.get('SHOTSTACK_API_STAGE_KEY')
+ # Production
+SHOTSTACK_HOST_URL = 'https://api.shotstack.io/v1'
+SHOTSTACK_KEY_TYPE = 'DeveloperKey'
+SHOTSTACK_API_KEY = os.environ.get('SHOTSTACK_API_PROD_KEY')
 ##
 SS_conf = shotstack.Configuration(host=SHOTSTACK_HOST_URL)
 SS_conf.api_key[SHOTSTACK_KEY_TYPE] = SHOTSTACK_API_KEY
@@ -349,7 +349,7 @@ def get_ss_status(id):
         status = api_response['response']['status']
         return status
     except Exception as e:
-        print(f"Unable to resolve API call: {e}")
+        print(f"Unable to resolve ShotStack API call: {e} - Ensure using correct type API key (dev/production) ")
 
 def get_cm_info(id):
     try:
@@ -362,7 +362,7 @@ def get_cm_info(id):
         )
         return response.json()
     except Exception as e:
-        print(f"Unable to resolve API call: {e}")
+        print(f"Unable to resolve CreatoMate API call: {e}")
 
 @app.route('/assets', methods=["GET"])
 @login_required
