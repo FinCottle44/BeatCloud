@@ -45,7 +45,7 @@ s3 = boto3.client('s3',
 )
 
 ###### RENDERING SETUP!!!
-CHOSEN_SERVICE = "shotstack"
+CHOSEN_SERVICE = "creatomate"
 ### ShotStack Setup
 ## Keys
  # Development

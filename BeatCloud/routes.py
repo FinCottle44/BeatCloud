@@ -695,10 +695,6 @@ def create_visualizer(v_id):
                                           quality, fx, 
                                           base_image, 
                                           base_video)
-    
-    # Check tier for watermark
-    if current_user.tier == "free":
-        pass
 
     # save audio to tmp:
     vid.audio_path = f"{v_id}_audio.{vid.audio_ext}"
@@ -706,7 +702,18 @@ def create_visualizer(v_id):
     
     # Extra params
     vid.show_title = show_title
+    # if current_user.tier == "free":
+    #     if vid.contains_layers:
+    #         # if tier free & contains layers combine images
+    #         pass
+    #     else:
+    #         # if tier free & doesn't contain layers, save watermark as user_layers.
+    #         pass
+    #     vid.contains_layers = True
+    # else:
     vid.contains_layers = os.path.exists(os.path.join(tmpdir, f"{vid.id}_layers.png"))
+    vid.watermark = current_user.tier == "free"
+    
 
     if vid is not None: # Has passed validation
         vid_json = vid.to_json() # Convert object to JSON for celery tasks

@@ -265,6 +265,7 @@ class StillVisualizer(Visualizer):
                 "LAYERS": self.layers_url,
                 "TITLE": self.title_url,
                 "AUDIO FILE": self.audio_url,
+                "WATERMARK.opacity": 100 if self.watermark else 0,
                 "duration":self.audio_duration, # NEED THIS INCASE VIDEO CLIP IS LONGER THAN AUDIO
                 "frame_rate":1
             }
@@ -333,8 +334,9 @@ class LoopVisualizer(Visualizer):
                 "LAYERS": self.layers_url,
                 "TITLE": self.title_url,
                 "AUDIO FILE": self.audio_url,
+                "WATERMARK.opacity": 100 if self.watermark else 0,
                 "duration":self.audio_duration, # NEED THIS INCASE VIDEO CLIP IS LONGER THAN AUDIO
-                "frame_rate":24 #change with tier or selection
+                # "frame_rate":24 #change with tier or selection ## think the templates handle this?
             }
         }
         return options
@@ -380,6 +382,7 @@ class StillCompositeVisualizer(StillVisualizer, CompositeVisualizer):
                 "LAYERS": self.layers_url,
                 "TITLE": self.title_url,
                 "AUDIO FILE": self.audio_url,
+                "WATERMARK.opacity": 100 if self.watermark else 0,
                 "duration":self.audio_duration, # NEED THIS INCASE VIDEO CLIP IS LONGER THAN AUDIO
                 "frame_rate":15
             }
@@ -427,6 +430,7 @@ class LoopCompositeVisualizer(LoopVisualizer, CompositeVisualizer):
                 "LAYERS": self.layers_url,
                 "TITLE": self.title_url,
                 "AUDIO FILE": self.audio_url,
+                "WATERMARK.opacity": 100 if self.watermark else 0,
                 "duration":self.audio_duration, # NEED THIS INCASE VIDEO CLIP IS LONGER THAN AUDIO
                 "frame_rate":24
             }
