@@ -632,11 +632,9 @@ def webhook_received():
             print(f"Could not update subscription - couldn't find user with StripeID:{cust}")
 
     elif event_type == 'customer.subscription.trial_will_end':
-        # notify user of ending trial
+        # notify user of ending trial maybe with SQS
         print('Subscription trial will end')
-
-    ## revoke access while paused??
-
+        
     return jsonify({'status': 'success'})
 
 ################################################################################################################################################################
@@ -702,17 +700,8 @@ def create_visualizer(v_id):
     
     # Extra params
     vid.show_title = show_title
-    # if current_user.tier == "free":
-    #     if vid.contains_layers:
-    #         # if tier free & contains layers combine images
-    #         pass
-    #     else:
-    #         # if tier free & doesn't contain layers, save watermark as user_layers.
-    #         pass
-    #     vid.contains_layers = True
-    # else:
     vid.contains_layers = os.path.exists(os.path.join(tmpdir, f"{vid.id}_layers.png"))
-    vid.watermark = current_user.tier == "free"
+    vid.watermark = current_user.tier == "free" # Used in models.py when creating edits
     
 
     if vid is not None: # Has passed validation
