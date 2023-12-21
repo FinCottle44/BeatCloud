@@ -27,7 +27,7 @@
           {% endif %}
           <ul class="list-group" id="font_list">
             {% for fontname in user_fonts.values() %}
-            <li id="{{user_fonts[fontname]}}-row" class="shadow animate-in list-group-item d-flex justify-content-between align-items-center">
+            <li id="{{fontname}}-row" class="shadow animate-in list-group-item d-flex justify-content-between align-items-center">
               {{fontname}}
               <span data-toggle="modal" data-target="#delete_font_modal" class="del-font badge bg-primary rounded-pill py-1 px-2 delete_font" onclick="trashcan('{{fontname}}', '{{user.id}}', 'font')">
                 <i class="bi bi-trash"></i>
