@@ -117,7 +117,6 @@ if not exists:
 
 #####
 # Flask-Login helper to retrieve a user from our db
-### TRY REPLACING OAUTH LOGIN STUFF HERE
 @login_manager.user_loader
 def load_user(user_id):
     db_user = beatcloud_db.get_user(user_id)
@@ -151,63 +150,77 @@ class User(UserMixin):
         self.has_trialed = has_trialed
         self.tier = tier
         self.credits = credits
-        self.locked = self.check_tier_limits(asset_usage, preset_usage, video_usage) # We lock accounts if they exceed tier limits & prompt users to delete some assets/templates (in layout.html)
+        self.asset_usage = asset_usage
+        self.preset_usage = preset_usage
+        self.video_usage = video_usage
+        self.locked = None  # Set to None initially, it will be set on-demand
+        print("User __init__ called")
 
     def __str__(self) -> str:
+        print("User __str__ called")
         return f"User {self.id} - Email: {self.email}, Tier: {self.tier}, Locked: {self.locked}"
-  
+
+    def load_tier_limits(self):
+        print("User load_tier_limits called")
+        return app.config["TIERS"].get(self.tier, {})
+
     def check_tier_limits(self, asset_usage, preset_usage, video_usage):
-        tier = app.config["TIERS"][self.tier]
-        return video_usage >= int(tier['monthly_vid_limit']) + int(self.credits) or asset_usage > tier['asset_limit'] or preset_usage > tier['preset_limit']# if true account locked
-             
+        print("User check_tier_limits called")
+        tier_limits = self.load_tier_limits()
+        return (
+            video_usage >= int(tier_limits.get('monthly_vid_limit', 0)) + int(self.credits) or
+            asset_usage > tier_limits.get('asset_limit', 0) or
+            preset_usage > tier_limits.get('preset_limit', 0)
+        )
+
+    def load_plan_and_limits(self):
+        print("User load_plan_and_limits called")
+        tier_limits = self.load_tier_limits()
+        session['plan'] = {
+            'tier': self.tier,
+            'limits': {
+                'monthly_vid_limit': int(tier_limits.get('monthly_vid_limit', 0)),
+                'asset_limit': tier_limits.get('asset_limit', 0),
+                'preset_limit': tier_limits.get('preset_limit', 0),
+            },
+        }
+
+    def lazy_load(self):
+        print("User lazy_load called")
+        if 'plan' not in session:
+            self.load_plan_and_limits()
+        self.locked = self.check_tier_limits(self.asset_usage, self.preset_usage, self.video_usage)
+
     def check_if_past_reset(self, curr_reset):
-        print("Checking if past user's reset")
+        print("User check_if_past_reset called")
         now = datetime.now().timestamp()
-        if curr_reset <= now: # is in past
+        if curr_reset <= now:  # is in past
             try:
+                # Reset user's usage
                 beatcloud_db.set_user_video_usage(self.id, 0)
                 beatcloud_db.set_user_credits(self.id, 0)
+
+                # Set forecast date for the next reset
                 month_from_current = int((datetime.fromtimestamp(curr_reset) + timedelta(days=30)).timestamp())
                 beatcloud_db.set_user_usage_reset(self.id, month_from_current)
                 print("RESET USERS USAGE & SET FORECAST DATE")
                 return month_from_current
             except BaseException as e:
                 print(f"Error resetting usage for user {self.id}: {e}")
-        return curr_reset # Keep as it was
+        return curr_reset  # Keep as it was
 
-    # def get_tier(self, cust_id):
-    #     sub = stripe.Subscription.list(customer=cust_id)
-    #     if sub:
-    #         for s in sub.data: # may have multiple (old etc)
-    #             sub_status = s.status
-    #             if sub_status not in ['active', 'trialing']:
-    #                 print("Inactive subscription")
-    #             else:
-    #                 # Reset usage bcus its first time user logging in since next billing cycle started (s.current_peroid_end has changed)
-    #                 if s.current_period_end > self.user_usage_reset:
-    #                     beatcloud_db.set_user_usage_reset(self.id, s.current_period_end)
-    #                     self.user_usage_reset = s.current_period_end
-    #                     # reset usage to 0
-    #                     beatcloud_db.set_user_video_usage(self.id, 0)
-    #                 elif s.current_period_end < self.user_usage_reset: # s.current_period_end <= self.user_usage_reset
-    #                     print("****STRIPE PERIOD RESET END IS BEFORE DB user_usage_reset****")
-    #                     self.user_usage_reset = s.current_period_end
-    #                     beatcloud_db.set_user_usage_reset(self.id, s.current_period_end)
-    #                 # else == means that stripe & ddb are inline & no changes need to be made
+    # Add a property to easily access the plan information
+    @property
+    def plan(self):
+        print("User plan property called")
+        if 'plan' not in session:
+            self.load_plan_and_limits()
+        return session['plan']
 
-    #                 prod_id = s.plan.product
-    #                 prod = stripe.Product.retrieve(prod_id)
-    #                 return prod.metadata.tier
-    #     else:
-    #         # free user - check if billing date passed, reset usage & set renewal to 30 days from now
-    #         now = datetime.now().timestamp()
-    #         if self.user_usage_reset <= now:
-    #             month_from_now = int((datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=30)).timestamp())
-    #             beatcloud_db.set_user_usage_reset(self.id, month_from_now)
-    #             beatcloud_db.set_user_video_usage(self.id, 0)
-    #             self.user_usage_reset = month_from_now
-    #         return 'free'
-    
+    # Override the get_id method to return a string
+    def get_id(self):
+        print("User get_id called")
+        return str(self.id)
 ####
 #  Imports
 from .routes import *

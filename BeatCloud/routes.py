@@ -52,6 +52,7 @@ def home():
 @login_required
 @app.route("/create", methods=['GET'])
 def create():
+    current_user.lazy_load() # Check locked status
     if not current_user.is_authenticated:
         return redirect('login')
 
@@ -80,7 +81,7 @@ def get_user_fonts(u_id):
                 fontname, _ = os.path.splitext(filename)  # Get the base filename without extension
                 fonts[fontname] = filename
         else:
-            print('No fonts found in the specified path.')
+            print('No fonts for user found in S3.')
         return fonts
     except Exception as e:
         print(f"Error fetching user fonts: {e}")
@@ -182,7 +183,7 @@ def get_user_layers(u_id):
                 layername, _ = os.path.splitext(filename)  # Get the base filename without extension
                 layers[layername] = filename
         else:
-            print('No layers found in the specified path.')
+            print('No layers for user found in S3.')
         return layers
     except Exception as e:
         print(f"An error occurred when feching user {u_id}'s layers: {e}")
@@ -643,6 +644,7 @@ def webhook_received():
 # Create Visualizer
 @app.route("/visualizers/<v_id>", methods=["POST"])
 def create_visualizer(v_id):
+    current_user.lazy_load()
     if current_user.locked:
         return "Account temporarily locked. Plan limits likely reached.", 400
 
