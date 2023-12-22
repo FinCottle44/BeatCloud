@@ -20,7 +20,7 @@ c_app.conf.result_backend = f"dynamodb://{os.environ['AWS_DB_ACCESS_KEY_ID']}:{o
 c_app.conf.beat_schedule = {
     'cleanup-task': {
         'task': 'scheduled_tasks.cleanup_task',
-        # 'schedule': 30,  # in seconds (6 hours)
+        'schedule': 6 * 60 * 60,  # in seconds (6 hours)
     },
 }
 
