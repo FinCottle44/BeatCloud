@@ -11,6 +11,7 @@ services:
       - 8000:8000
     env_file:
       - .env
+
   nginx:
     image: nginx:latest
     volumes:
@@ -31,6 +32,17 @@ services:
       - instance-data:/app/instance # Share file structure
     depends_on:
       - server
+    env_file: 
+      - .env
+      
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.celerybeat
+    volumes:
+      - instance-data:/app/instance # Share file structure
+    depends_on:
+      - celery
     env_file: 
       - .env
 

@@ -4,7 +4,7 @@
 ARG PYTHON_VERSION=3.11.4
 FROM python:${PYTHON_VERSION}-slim as base
 
-#FFMPEG for rendering
+# FFMPEG for rendering & Other celery stuff
 RUN apt-get update && apt-get install -y ffmpeg libcurl4-openssl-dev curl build-essential gcc libssl-dev
 
 # Create celery user:
@@ -37,4 +37,3 @@ COPY ./BeatCloud/engine /app/engine
 USER celeryuser
 
 CMD [ "celery", "-A", "engine.tasks", "worker", "--loglevel=info", "-E" ]
-# CMD [ "celery", "-A", "engine.ImageTools", "worker", "--loglevel=info", "-E" ]
