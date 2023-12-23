@@ -25,12 +25,23 @@
   {{form.videoid(value=video.id)}}
   <div class="row align-items-center">
     <div class="col-lg-6">
-      <video id="video_file" class="shadow mw-100 rounded-3" src=""controls></video>
+      <div class="row px-5 py-2">
+        <video id="video_file" class="shadow mw-100 rounded-3 p-0" src=""controls></video>
+      </div>
+      <div class="row px-5 py-2">
+        <h6>Thumbnail URL</h6>
+        <div class="input-group">
+          <span class="input-group-text" id="basic-addon1">
+            <i class="bi bi-clipboard"></i>
+          </span>
+          <input type="text" class="p-2 form-control" placeholder="Thumbnail URL" aria-label="Input group example" aria-describedby="basic-addon1" readonly="" value="/visualizers/{{video.id}}/thumb">
+        </div>
+      </div>
     </div>
       <div class="col-lg-6">
           <div class="row p-2 mb-1">
             <div class="col align-self-center">
-              <h4 class="m-0">Upload to YouTube</h4>
+              <h4 class="m-0">Details</h4>
             </div>
             <div class="col">
               <ul class="nav" style="float:right;">
@@ -140,15 +151,14 @@
             <h4>Visibility</h4>
             {{form.visibility}}
           </div>
+          <div class="row py-3">
+            {% if video.visualizer_status != "Uploaded" %}
+              {{form.submit}}
+            {% else %}
+              <a href="https://www.youtube.com/watch?v={{video.yt_id}}" class="shadow btn btn-outline-danger mb-3 py-2 mt-1 btn-main mx-auto">View on YouTube</a>
+            {% endif %}
+          </div>
       </div>
-  </div>
-
-  <div class="row py-3">
-    {% if video.visualizer_status != "Uploaded" %}
-      {{form.submit}}
-    {% else %}
-      <a href="https://www.youtube.com/watch?v={{video.yt_id}}" class="shadow btn btn-outline-danger mb-3 py-2 mt-1 btn-main mx-auto">View on YouTube</a>
-    {% endif %}
   </div>
 </form>
 
