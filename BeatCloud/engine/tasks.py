@@ -180,8 +180,8 @@ def CreateGifPreview(self, id, video_path, frame_path):
 #######################################################################################################################
 #   Render tasks
 #######################################################################################################################
-@c_app.task(name="preview.render", bind=True) # TODO implement 2 queues using process.* below
-# @c_app.task(name="process.render", bind=True)
+# @c_app.task(name="preview.render", bind=True) # TODO implement 2 queues using process.* below
+@c_app.task(name="process.render", bind=True)
 def render(self, v, tmpdir):
     chain_tasks = (initialise.s(v, tmpdir)
                    | upload_clip_assets.s() # (id, files, filenames) returned by initialise()
@@ -191,8 +191,8 @@ def render(self, v, tmpdir):
     result = chain_tasks.apply_async()
     return result
 
-@c_app.task(name="preview.initialise", bind=True) # TODO implement 2 queues using process.* below
-# @c_app.task(name="process.initialise", bind=True)
+# @c_app.task(name="preview.initialise", bind=True) # TODO implement 2 queues using process.* below
+@c_app.task(name="process.initialise", bind=True)
 def initialise(self, visualizer, tmpdir):
     v = json.loads(visualizer) # Passed through as JSON
     # Set DB status as preprocessing
@@ -207,8 +207,8 @@ def initialise(self, visualizer, tmpdir):
     files, filenames = get_clip_paths(tmpdir, v)
     return (v, files, filenames)
     
-@c_app.task(name="preview.upload_clip_assets", bind=True) # TODO implement 2 queues using process.* below
-# @c_app.task(name="process.upload_clip_assets", bind=True)
+# @c_app.task(name="preview.upload_clip_assets", bind=True) # TODO implement 2 queues using process.* below
+@c_app.task(name="process.upload_clip_assets", bind=True)
 def upload_clip_assets(self, result):
     print("Uploading clip assets to s3... May take a while")
     v, files, filenames = result
@@ -232,7 +232,8 @@ def upload_clip_assets(self, result):
         # TODO log db
     return v
 
-@c_app.task(name="preview.create_edit", bind=True) # TODO implement 2 queues using process.* below
+# @c_app.task(name="preview.create_edit", bind=True) # TODO implement 2 queues using process.* below
+@c_app.task(name="process.create_edit", bind=True) # TODO implement 2 queues using process.* below
 def create_edit(self, v):
     vis_json = json.dumps(v)
     v_obj = models.Visualizer.from_json(vis_json)
@@ -363,8 +364,8 @@ def get_clip_paths(tmpdir, v):
 import google.oauth2.credentials
 import googleapiclient.discovery
 import googleapiclient.errors
-@c_app.task(name="preview.upload", bind=True) # TODO implement 2 queues using process.* below
-# @c_app.task(name="tasks.upload")
+# @c_app.task(name="preview.upload", bind=True) # TODO implement 2 queues using process.* below
+@c_app.task(name="process.upload")
 def upload(self, user_id, v_id, form, credentials):
     # Inform DB of start of task
     beatcloud_db.set_visualizer_status(user_id, v_id, 'Uploading')

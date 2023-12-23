@@ -36,4 +36,4 @@ COPY ./BeatCloud/engine /app/engine
 # Switch to the non-privileged user to run the application.
 USER celeryuser
 
-CMD [ "celery", "-A", "engine.tasks", "worker", "--loglevel=info", "-E" ]
+CMD [ "celery", "-A", "engine.tasks", "worker", "-Q", "preview,process", "--loglevel=info", "-E" ]
