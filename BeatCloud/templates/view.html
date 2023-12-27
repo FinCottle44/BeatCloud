@@ -28,13 +28,14 @@
       <div class="row px-5 py-2">
         <video id="video_file" class="shadow mw-100 rounded-3 p-0" src=""controls></video>
       </div>
+      <div class="row"><hr class="w-25 mx-auto my-3"></div>
       <div class="row px-5 py-2">
         <h6>Thumbnail URL</h6>
         <div class="input-group">
-          <span class="input-group-text" id="basic-addon1">
-            <i class="bi bi-clipboard"></i>
-          </span>
-          <input type="text" class="p-2 form-control" placeholder="Thumbnail URL" aria-label="Input group example" aria-describedby="basic-addon1" readonly="" value="/visualizers/{{video.id}}/thumb">
+          <input id="thumb_url" type="text" class="form-control py-2 px-2" placeholder="Thumbnail URL" aria-label="Thumbnail URL" value="/visualizers/{{video.id}}/thumb" readonly>
+          <button class="btn btn-light" type="button" id="btn_copy_thumb_url" onclick="copy_thumb_url()">
+            <span class="px-2">Copy</span>
+            <i class="bi bi-clipboard"></i></button>
         </div>
       </div>
     </div>
@@ -336,5 +337,17 @@
   $(document).ready(function (){
     $('#video_file').attr("src", add_dummy("{{v_path}}"));
   });
+
+  let text = document.getElementById('thumb_url').value;
+  const copy_thumb_url = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showAlert('success', 'Thumbnail URL successfully copied to clipboard.', true);
+      console.log('Content copied to clipboard');
+    } catch (err) {
+      showAlert('danger', "Couldn't copy thumbail URL to clipboard.");
+      console.error('Failed to copy: ', err);
+    }
+  }
 </script>
 {%endblock%}
