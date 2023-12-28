@@ -856,6 +856,9 @@ def draw_preview(v_id):
     except FileNotFoundError:
         pass
     
+    # preview_dimensions = (640, 360) # Cannot have small preview due to background edits made would force bad preview
+    preview_dimensions = (1280, 720)
+
     ## Determine base type
     # check if the post request has the file part
     if 'img-file' in request.files and request.files['img-file'].filename != '':
@@ -870,7 +873,7 @@ def draw_preview(v_id):
             saved_path = ImageTools.InitOriginal(path, UploadedImg=file)
 
             # Queue task to start preview
-            preview_task = tasks.CreateBG.delay(v_id, blur, saved_path, (1280, 720), blur_level)
+            preview_task = tasks.CreateBG.delay(v_id, blur, saved_path, preview_dimensions, blur_level)
             
             # No longer need any video preview files as img base:
             try_delete(v_id, f"{v_id}_bg.gif")
@@ -915,7 +918,7 @@ def draw_preview(v_id):
             saved_path = ImageTools.InitOriginal(path, imgUrl=fileURL)
 
             # Queue preview drawing:
-            preview_task = tasks.CreateBG.delay(v_id, blur, saved_path, (1280, 720), blur_level)
+            preview_task = tasks.CreateBG.delay(v_id, blur, saved_path, preview_dimensions, blur_level)
 
             # Not sure whether to keep below??
             # base_path = preview_bg_name # Prevents returning of underlying file structure
@@ -998,17 +1001,17 @@ def delete_background_edits(v_id):
 def draw_title(v_id):
     # need to Change to proper validation
     if request.form['title'] != "":
+        title_dim = (1920, 1080) if request.form['title_dim'] == "1080" else (1280, 720) # enforce tier check
         font = request.form['title_font']
         title_font_colour = request.form['title_font_colour']
         title_font_size = int(request.form['title_font_size'])
         title_y_offset = int(request.form['title_ypos'])
         title_task = tasks.CreateTitleImage.delay(v_id, font, title_font_size=title_font_size, 
                                                 title_font_colour=title_font_colour, title_y_offset=title_y_offset, u_id=current_user.id, 
-                                                title=request.form['title'], dim=(1920, 1080),
+                                                title=request.form['title'], dim=title_dim,
                                                 system_fonts=app.config["SYSTEM_FONTS"]
                                             )
     return jsonify({'task_id':title_task.id}), 202
-    # return  url_for('download_file_from_temp', v_id=v_id, filename="v_id.png")
 
 # Fetched when celery preview task completes
 @app.route('/visualizers/<v_id>/title', methods=['GET'])

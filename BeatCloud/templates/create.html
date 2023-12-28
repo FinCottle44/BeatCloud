@@ -368,35 +368,26 @@
                   <div class="row">
                     <div class="col">
                       <h6>Video Resolution</h6>
-                      <!-- implement with flask forms -->
                       {{form.video_quality}}
-    
                       <div class="btn-group w-100 px-1" role="group" aria-label="Video quality toggle group">
                         <input type="radio" class="btn-check quality-check" name="quality_radio" id="radio_720" autocomplete="off" checked="" value="720">
                         <label class="btn btn-outline-primary" for="radio_720">720p</label>
-
-                        <!-- Hover effect "Beatcloud Plus Feature!"-->
-                        <!-- ensure serverside testing of account type -->
-                        <!-- <input type="radio" class="btn-check quality-check bc-plus-locked" name="quality_radio" id="radio_1080" autocomplete="off" disabled>  -->
-                        <input type="radio" class="btn-check quality-check bc-plus-locked" name="quality_radio" id="radio_1080" autocomplete="off" value="1080" disabled> 
-                        <label class="btn btn-outline-primary" for="radio_1080">1080p</label>
+                        
+                        <input type="radio" class="btn-check quality-check bc-plus-locked" name="quality_radio" id="radio_1080" autocomplete="off" value="1080" {{'disabled' if user.tier not in ['unlimited'] else '' }}> 
+                        <label class="btn btn-outline-primary" for="radio_1080">
+                          1080p
+                          <img src="{{ url_for('static', filename='img/unlim-icon.png') }}" class="p-0 {{ 'd-none' if user.tier in ['unlimited'] else '' }}" style="width:20px;"> 
+                        </label>
                       </div> 
                     </div>
                     <div class="col">
-                      <h6>Video Framerate</h6>
-                      <!-- implement with flask forms -->
-                      <!-- {{form.video_quality}} -->
-    
+                      <!-- <h6>Video Framerate</h6>    
                       <div class="btn-group w-100 px-1" role="group" aria-label="Video Framerate toggle group">
                         <input type="radio" class="btn-check fps-check" name="fps_radio" id="fps_radio_24" autocomplete="off" checked="" value="15">
                         <label class="btn btn-outline-primary" for="fps_radio_24">15</label>
-
-                        <!-- Hover effect "Beatcloud Plus Feature!"-->
-                        <!-- ensure serverside testing of account type -->
-                        <!--  -->
                         <input type="radio" class="btn-check fps-check bc-plus-locked" name="fps_radio" id="fps_radio_60" autocomplete="off" value="25" disabled> 
                         <label class="btn btn-outline-primary" for="fps_radio_60">25</label>
-                      </div>
+                      </div> -->
                     </div>
                   </div>
                 </div>

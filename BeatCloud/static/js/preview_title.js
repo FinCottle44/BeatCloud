@@ -5,9 +5,11 @@ const debounce_interval = 400;
 function preview_title(){ //preview the title
   var title = document.getElementById('beatName').value;
   var title_font = document.getElementById('sl_title_font').value;
+  var title_dim = document.getElementById('quality_select').value;
   var title_font_size = document.getElementById('title_font_size').value;
   var title_font_colour = document.getElementById('title_font_colour').value;
   var title_font_ypos = document.getElementById('title_ypos').value;
+  var showTitle = document.getElementById('chkShowTitle').checked;
   var showTitle = document.getElementById('chkShowTitle').checked;
   var action = `/visualizers/${p_v_id}/title`
 
@@ -31,6 +33,7 @@ function preview_title(){ //preview the title
   formData.append('showTitle', showTitle)
   formData.append('title_font_colour', title_font_colour)
   formData.append('title_ypos', title_font_ypos)
+  formData.append('title_dim', title_dim)
 
   xhr.addEventListener('readystatechange', handle_title_response, false);
   xhr.open("PUT", action);

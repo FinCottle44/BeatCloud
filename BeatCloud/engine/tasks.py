@@ -93,7 +93,7 @@ def CreateBG(self, v_id, blur, load_path, dim, blur_level=5, temp=False):
     # resize image on top
     hpercent = (dim[1] / float(original.size[1]))
     wsize = int((float(original.size[0]) * float(hpercent)))
-    originalResized = original.resize((wsize, 720), Image.LANCZOS)
+    originalResized = original.resize((wsize, dim[1]), Image.LANCZOS)
 
     # make background
     if blur:
@@ -171,7 +171,7 @@ def CreateGifPreview(self, id, video_path, frame_path):
     v = VideoCapture(video_path)
     width = int(v.get(CAP_PROP_FRAME_WIDTH))
     height = int(v.get(CAP_PROP_FRAME_HEIGHT))
-    assert width/height == 16/9 # Ensure 16/9 video
+    assert width/height == 16/9, 'Uploaded video must have an aspect ratio of 16:9.' # Ensure 16/9 video
 
     # Get and return preview frames
     _ = ImageTools.get_frames(id, video_path, frame_path)
@@ -201,8 +201,10 @@ def initialise(self, visualizer, tmpdir):
     # if video base probe duration
     if v.get('base_type') == 'video':
         v['base_duration'] = get_duration(v.get('base_path'), tmpdir)
+        
     # probe audio duration
     v['audio_duration'] = get_duration(v.get('audio_path'), tmpdir)
+
     # get_clip_paths
     files, filenames = get_clip_paths(tmpdir, v)
     return (v, files, filenames)
